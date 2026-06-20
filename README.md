@@ -1,12 +1,6 @@
 # GameCentr
 
-![picture 0](https://i.imgur.com/uchihZY.png)  
-
-<p align="center">
-  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" />
-  <img src="https://img.shields.io/badge/version-v1.0.0-blue" alt="Version" />
-  <img src="https://img.shields.io/badge/build-passed-brightgreen" alt="Build Status" />
-</p>
+![banner github](https://i.imgur.com/saEznWQ.png)
 
 ## About GameCentr
 
@@ -21,7 +15,7 @@ GameCentr is your ultimate destination for fun and excitement. Designed to be us
 🔨 **Whack a Mole Game** – Quick reflexes win here.  
 🧠 **Memory Match** – Flip and match pairs to win.  
 🔁 **Pattern Repeater** – Remember and repeat sequences.  
-➕ **Quick Math Challenge** – Solve math problems under pressure.  
+➕ **Quick Math Challenge** – Solve math problems under pressure.
 
 Whether you're here for a quick break or a longer gaming session, GameCentr has something for everyone!
 
@@ -38,15 +32,15 @@ Whether you're here for a quick break or a longer gaming session, GameCentr has 
 
 ## Local Architecture
 
-![local drawio](https://github.com/user-attachments/assets/6e1f3cdd-e9cc-43df-ab5f-5532bc391d85)
+![local drawio](https://i.imgur.com/rJEJWUC.png)
 
 ## Remote Architecture
 
-![remote drawio](https://github.com/user-attachments/assets/02f0a90c-ff99-44b4-bde6-6cba53c6e6eb)
+![remote drawio](https://i.imgur.com/oEZ8Aud.png)
 
 ## Docker Architecture
 
-![docker drawio](https://github.com/user-attachments/assets/f6124063-c851-45cd-b52b-bf7b49c88a7c)
+![docker drawio](https://i.imgur.com/IHAAXuK.png)
 
 ## Setup Instructions
 

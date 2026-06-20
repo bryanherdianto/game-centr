@@ -1,0 +1,119 @@
+/* TypingGame.css — ThoughtStream chrome (flat, sharp, warm-neutral). */
+.container {
+	max-width: 680px;
+	margin: 0 auto;
+	text-align: center;
+	padding: 60px 24px;
+	background-color: #fafaf9; /* background */
+}
+
+.title {
+	font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
+	font-size: 2rem;
+	font-weight: 700;
+	letter-spacing: -0.015em;
+	margin-bottom: 36px;
+	color: #1c1917; /* ink */
+}
+
+.start-button {
+	background-color: #78716c; /* primary */
+	color: #fafaf9; /* background */
+	border: 1px solid #78716c;
+	padding: 12px 24px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-family:
+		"Inter",
+		-apple-system,
+		"Segoe UI",
+		Helvetica,
+		sans-serif;
+	font-size: 15px;
+	font-weight: 600;
+	margin-bottom: 24px;
+	cursor: pointer;
+	border-radius: 0;
+	box-shadow: none;
+	transition: background-color 0.15s ease;
+}
+
+.start-button:hover {
+	background-color: #57534e; /* primary-hover */
+	border-color: #57534e;
+}
+
+.start-button:active {
+	background-color: #44403c; /* primary-active */
+	border-color: #44403c;
+}
+
+.timer {
+	font-family: "Source Code Pro", "Fira Code", Consolas, monospace;
+	font-size: 1.5rem;
+	margin-bottom: 24px;
+	color: #57534e; /* text-secondary */
+}
+
+.sentence {
+	font-size: 1.2rem;
+	line-height: 1.8;
+	margin-bottom: 24px;
+	color: #1c1917; /* ink */
+}
+
+/* Typed-character feedback maps to semantic success/error tokens. */
+.sentence .correct {
+	color: #65a30d; /* success */
+}
+
+.sentence .incorrect {
+	color: #dc2626; /* error */
+}
+
+.input-container {
+	margin-bottom: 24px;
+}
+
+.input-field {
+	height: 48px;
+	padding: 12px 16px;
+	width: 100%;
+	box-sizing: border-box;
+	border-radius: 0;
+	border: 1px solid #d6d3d1; /* border-medium */
+	background-color: #fafaf9; /* background */
+	color: #1c1917; /* ink */
+	font-family:
+		"Inter",
+		-apple-system,
+		"Segoe UI",
+		Helvetica,
+		sans-serif;
+	font-size: 15px;
+	transition: border-color 0.15s ease;
+}
+
+.input-field::placeholder {
+	color: #a8a29e; /* text-tertiary */
+}
+
+.input-field:focus {
+	outline: none;
+	border-color: #78716c; /* primary */
+	box-shadow:
+		0 0 0 2px #fafaf9,
+		0 0 0 4px #78716c;
+}
+
+.game-over {
+	font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
+	font-size: 1.5rem;
+	color: #1c1917; /* ink */
+	margin-bottom: 24px;
+}
+
+.game-over p {
+	margin: 6px 0;
+}

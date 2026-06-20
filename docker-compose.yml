@@ -1,15 +1,15 @@
 services:
   backend:
-    build: ./GameCentr-server
+    build: ./backend
     ports:
       - "8080:8080"
     env_file:
-      - ./GameCentr-server/.env
+      - ./backend/.env
     depends_on:
       - frontend
       
   frontend:
-    build: ./GameCentr-client
+    build: ./frontend
     ports:
       - "3000:80"
     environment:

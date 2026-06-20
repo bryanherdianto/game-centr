@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   ThoughtStream design system — see DESIGN.md (the source of truth).
+   Minimal, zen, distraction-free: warm-neutral stone palette, serif headings,
+   generous white space, sharp 0px edges, and NO shadows (separation comes from
+   hairline borders and white space only).
+
+   Tokens below are exposed by Tailwind v4 as utilities, e.g.:
+     --color-primary        -> bg-primary / text-primary / border-primary
+     --color-border-subtle  -> border-border-subtle
+     --font-serif           -> font-serif
+   ========================================================================== */
+@theme {
+	/* Brand palette */
+	--color-primary: #78716c; /* Stone   — UI elements, links, icons */
+	--color-primary-hover: #57534e;
+	--color-primary-active: #44403c;
+	--color-secondary: #a8a29e; /* Sage    — supporting accents, dividers */
+	--color-ink: #1c1917; /* Warm Black — emphasis, strong headings */
+
+	/* Surfaces */
+	--color-background: #fafaf9; /* Warm white page background */
+	--color-surface: #f5f5f4; /* Card and section backgrounds */
+	--color-surface-raised: #efedeb; /* Hover states, subtle callout blocks */
+
+	/* Content / text */
+	--color-text-primary: #1c1917;
+	--color-text-secondary: #57534e;
+	--color-text-tertiary: #a8a29e;
+
+	/* Borders */
+	--color-border-subtle: #e7e5e4;
+	--color-border-medium: #d6d3d1;
+	--color-border-strong: #a8a29e;
+
+	/* Semantic */
+	--color-success: #65a30d;
+	--color-success-bg: #f0fdf4;
+	--color-success-border: #bbf7d0;
+	--color-warning: #ca8a04;
+	--color-warning-bg: #fefce8;
+	--color-warning-border: #fef08a;
+	--color-error: #dc2626;
+	--color-error-hover: #b91c1c;
+	--color-error-active: #991b1b;
+	--color-error-bg: #fef2f2;
+	--color-error-border: #fecaca;
+	--color-info: #78716c;
+
+	/* Typography */
+	--font-sans: "Inter", -apple-system, "Segoe UI", Helvetica, sans-serif;
+	--font-serif: "Libre Baskerville", Georgia, "Times New Roman", serif;
+	--font-mono: "Source Code Pro", "Fira Code", Consolas, monospace;
+
+	/* Spacing — 12px base unit (DESIGN.md scale) */
+	--spacing: 0.25rem;
+
+	/* Radius — sharp geometric edges everywhere. `rounded-full` (avatars) is
+     unaffected by these tokens and still produces a circle. */
+	--radius-xs: 0px;
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+	--radius-xl: 0px;
+	--radius-2xl: 0px;
+	--radius-3xl: 0px;
+
+	/* Shadows — ThoughtStream is completely flat. Override the scale to none so a
+     stray `shadow-*` utility can never reintroduce elevation. */
+	--shadow-2xs: none;
+	--shadow-xs: none;
+	--shadow-sm: none;
+	--shadow-md: none;
+	--shadow-lg: none;
+	--shadow-xl: none;
+	--shadow-2xl: none;
+	--inset-shadow-2xs: none;
+	--inset-shadow-xs: none;
+	--inset-shadow-sm: none;
+}
+
+/* -----------------------------------------------------------------------------
+   Base styles — global reading experience per DESIGN.md typography section.
+   -------------------------------------------------------------------------- */
+@layer base {
+	html {
+		background-color: var(--color-background);
+	}
+
+	body {
+		margin: 0;
+		background-color: var(--color-background);
+		color: var(--color-text-primary);
+		font-family: var(--font-sans);
+		font-size: 17px; /* Body — default reading text */
+		line-height: 1.8;
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		font-family: var(--font-serif);
+		color: var(--color-ink);
+		font-weight: 700;
+		line-height: 1.3;
+		letter-spacing: -0.015em;
+	}
+
+	code,
+	pre,
+	kbd,
+	samp {
+		font-family: var(--font-mono);
+	}
+
+	a {
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+	a:hover {
+		color: var(--color-primary-hover);
+	}
+
+	/* Keyboard focus indicator — the one allowed "shadow" in DESIGN.md. */
+	:focus-visible {
+		outline: none;
+		box-shadow:
+			0 0 0 2px var(--color-background),
+			0 0 0 4px var(--color-primary);
+	}
+}
+
+/* -----------------------------------------------------------------------------
+   Reusable focus ring utility for inputs/buttons that manage their own focus.
+   -------------------------------------------------------------------------- */
+@utility focus-ring {
+	outline: none;
+	box-shadow:
+		0 0 0 2px var(--color-background),
+		0 0 0 4px var(--color-primary);
+}
+
+/* -----------------------------------------------------------------------------
+   Game-specific visual: animated rainbow background for the Color Guess card.
+   Kept because color IS the gameplay here; not part of the neutral chrome.
+   -------------------------------------------------------------------------- */
+.rainbow-bg {
+	background: linear-gradient(
+		270deg,
+		#ff5e62,
+		#ff9966,
+		#bda21a,
+		#759e42,
+		#43cea2,
+		#2bbea3,
+		#43e97b,
+		#29b198,
+		#43cea2,
+		#a8e063,
+		#b89900,
+		#bd714b,
+		#ff5e62
+	);
+	background-size: 2000% 2000%;
+	animation: rainbowMove 8s linear infinite;
+}
+
+@keyframes rainbowMove {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}

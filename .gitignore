@@ -1,0 +1,46 @@
+# Backend
+backend/.env
+backend/app
+
+# Frontend
+frontend/node_modules/
+frontend/dist
+frontend/.cache
+frontend/.parcel-cache
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# dotenv
+.env
+.env.*.local
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Misc cache / build artefacts
+*.tsbuildinfo
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_*/
+.node_repl_history
+*.tgz
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# LLM-related
+DESIGN.md
+CLAUDE.md

@@ -1,0 +1,227 @@
+/* HangmanGame.css */
+.hangman-container {
+	text-align: center;
+	padding: 36px;
+	background-color: #fafaf9;
+	border: 1px solid #e7e5e4;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.hangman-container h1 {
+	font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
+	color: #1c1917;
+}
+
+.hangman-container h5 {
+	color: #57534e;
+	max-width: 680px;
+	margin: 0 auto 12px;
+}
+
+.word-display {
+	margin: 20px;
+	font-size: 24px;
+	display: flex;
+	justify-content: center;
+}
+
+.letter {
+	margin: 0 5px;
+	font-size: 24px;
+	display: inline-block;
+	padding-bottom: 5px;
+	color: #1c1917;
+	transition: all 0.3s ease;
+}
+
+.letter.guessed {
+	color: #78716c;
+	border-bottom: 2px solid #1c1917;
+}
+
+.result-message {
+	font-size: 24px;
+	font-weight: bold;
+	margin: 20px 0;
+	color: #1c1917;
+}
+
+.new-game-button {
+	font-size: 15px;
+	font-weight: 600;
+	padding: 12px 24px;
+	background-color: #78716c;
+	color: #fafaf9;
+	border: 1px solid #78716c;
+	border-radius: 0;
+	cursor: pointer;
+	margin-top: 20px;
+	transition: all 0.2s ease;
+}
+
+.new-game-button:hover {
+	background-color: #57534e;
+}
+
+.new-game-button:active {
+	background-color: #44403c;
+}
+
+/* Hangman drawing styles */
+.hangman-container-drawing {
+	position: relative;
+	height: 250px;
+	width: 200px;
+	margin: 0 auto;
+}
+
+/* Gallows structure */
+.gallows-base {
+	position: absolute;
+	bottom: 0;
+	left: 20px;
+	height: 10px;
+	width: 100px;
+	background-color: #5d4037;
+}
+
+.gallows-pole {
+	position: absolute;
+	bottom: 0;
+	left: 40px;
+	height: 210px;
+	width: 10px;
+	background-color: #5d4037;
+}
+
+.gallows-top {
+	position: absolute;
+	top: 40px;
+	left: 40px;
+	height: 10px;
+	width: 100px;
+	background-color: #5d4037;
+}
+
+.gallows-rope {
+	position: absolute;
+	top: 40px;
+	left: 120px;
+	height: 30px;
+	width: 5px;
+	background-color: #8d6e63;
+}
+
+/* Hangman body parts */
+.hangman-head {
+	position: absolute;
+	top: 70px;
+	left: 102px;
+	height: 40px;
+	width: 40px;
+	border-radius: 50%;
+	border: 5px solid #333;
+}
+
+.hangman-body {
+	position: absolute;
+	top: 110px;
+	left: 119px;
+	height: 70px;
+	width: 6px;
+	background-color: #333;
+}
+
+.hangman-arm {
+	position: absolute;
+	width: 50px;
+	height: 6px;
+	background-color: #333;
+	top: 130px;
+}
+
+.hangman-left-arm {
+	left: 75px;
+	transform: rotate(30deg);
+}
+
+.hangman-right-arm {
+	left: 120px;
+	transform: rotate(-30deg);
+}
+
+.hangman-leg {
+	position: absolute;
+	height: 60px;
+	width: 6px;
+	background-color: #333;
+	top: 175px;
+}
+
+.hangman-left-leg {
+	left: 109px;
+	transform: rotate(20deg);
+}
+
+.hangman-right-leg {
+	left: 129px;
+	transform: rotate(-20deg);
+}
+
+.result-message {
+	font-size: 24px;
+	font-weight: bold;
+	margin: 20px 0;
+	color: #1c1917;
+}
+
+.keyboard {
+	margin: 20px;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 10px;
+}
+
+.keyboard button {
+	font-size: 15px;
+	font-weight: 600;
+	padding: 12px 24px;
+	background-color: #78716c;
+	color: #fafaf9;
+	border: 1px solid #78716c;
+	border-radius: 0;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.keyboard button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.keyboard button:hover {
+	background-color: #57534e;
+}
+
+@keyframes bounce {
+	0%,
+	20%,
+	50%,
+	80%,
+	100% {
+		transform: translateY(0);
+	}
+
+	40% {
+		transform: translateY(-20px);
+	}
+
+	60% {
+		transform: translateY(-10px);
+	}
+}
+
+.bounce {
+	animation: bounce 1s infinite;
+}
