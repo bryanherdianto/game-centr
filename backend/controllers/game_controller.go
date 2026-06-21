@@ -132,13 +132,24 @@ func GetGameLeaderboard(c *gin.Context) {
 		return
 	}
 
-	// Set options to sort by score descending, with createdAt ascending as a
-	// tiebreaker so equal scores rank by who achieved them first, and limit results
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "value", Value: -1}, {Key: "createdAt", Value: 1}})
-	findOptions.SetLimit(int64(limit))
+	// Aggregate scores grouped by owner — one entry per user, their personal best.
+	// Sort before grouping so $first picks the best score (highest value, earliest
+	// date for ties). Re-sort after grouping because $group drops ordering.
+	pipeline := mongo.Pipeline{
+		{{"$match", filter}},
+		{{"$sort", bson.D{{Key: "value", Value: -1}, {Key: "createdAt", Value: 1}}}},
+		{{"$group", bson.M{
+			"_id":       "$owner",
+			"scoreId":   bson.M{"$first": "$_id"},
+			"value":     bson.M{"$first": "$value"},
+			"createdAt": bson.M{"$first": "$createdAt"},
+			"metadata":  bson.M{"$first": "$metadata"},
+		}}},
+		{{"$sort", bson.D{{Key: "value", Value: -1}, {Key: "createdAt", Value: 1}}}},
+		{{"$limit", int64(limit)}},
+	}
 
-	cursor, err := db.ScoreColl.Find(ctx, filter, findOptions)
+	cursor, err := db.ScoreColl.Aggregate(ctx, pipeline)
 	if err != nil {
 		log.Printf("Error finding leaderboard scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -149,8 +160,8 @@ func GetGameLeaderboard(c *gin.Context) {
 	}
 	defer cursor.Close(ctx)
 
-	var scores []models.Score
-	if err := cursor.All(ctx, &scores); err != nil {
+	var results []bson.M
+	if err := cursor.All(ctx, &results); err != nil {
 		log.Printf("Error decoding leaderboard scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -160,9 +171,11 @@ func GetGameLeaderboard(c *gin.Context) {
 	}
 
 	// Batch-fetch owners to avoid an N+1 lookup per leaderboard entry
-	ownerIDs := make([]primitive.ObjectID, 0, len(scores))
-	for _, score := range scores {
-		ownerIDs = append(ownerIDs, score.Owner)
+	ownerIDs := make([]primitive.ObjectID, 0, len(results))
+	for _, r := range results {
+		if id, ok := r["_id"].(primitive.ObjectID); ok {
+			ownerIDs = append(ownerIDs, id)
+		}
 	}
 	ownerMap, err := buildUserMap(ctx, ownerIDs)
 	if err != nil {
@@ -176,21 +189,23 @@ func GetGameLeaderboard(c *gin.Context) {
 
 	var leaderboardEntries []gin.H
 	rank := 0
-	for _, score := range scores {
-		owner, ok := ownerMap[score.Owner]
+	for _, r := range results {
+		ownerID, ok := r["_id"].(primitive.ObjectID)
 		if !ok {
-			continue // Skip if owner not found
+			continue
 		}
-
-		// Increment rank only for entries we actually include so ranks stay
-		// contiguous even when an owner lookup is skipped
+		owner, ok := ownerMap[ownerID]
+		if !ok {
+			continue
+		}
 		rank++
 		leaderboardEntries = append(leaderboardEntries, gin.H{
 			"rank":        rank,
-			"score":       score.Value,
+			"scoreId":     r["scoreId"],
+			"score":       r["value"],
 			"user":        owner.ToResponse(),
-			"metadata":    score.Metadata,
-			"createdAt":   score.CreatedAt,
+			"metadata":    r["metadata"],
+			"createdAt":   r["createdAt"],
 			"scoringType": gameType.ScoringType,
 		})
 	}

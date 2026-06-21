@@ -1,10 +1,11 @@
 //TypingGame.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./TypingGame.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCookies } from "react-cookie";
 import { createScorePost } from "../actions/Score.action";
+import { useAchievements } from "../context/AchievementContext";
 
 const sentences = [
 	"The quick brown fox jumps over the lazy dog.",
@@ -28,10 +29,20 @@ const TypingGame = () => {
 	const [isGameStarted, setIsGameStarted] = useState(false);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [errorCount, setErrorCount] = useState(0);
+	const [totalWords, setTotalWords] = useState(0);
+	const prevInputRef = useRef("");
+	const { checkAchievements } = useAchievements();
 
 	useEffect(() => {
 		if (isGameOver && !scorePosted) {
 			handleSubmitScore();
+			checkAchievements("typing", {
+				wpm: totalWords,
+				errors: errorCount,
+				completed: true,
+				totalWords,
+			});
 		}
 		// eslint-disable-next-line
 	}, [isGameOver]);
@@ -68,6 +79,9 @@ const TypingGame = () => {
 		generateRandomSentence();
 		setTime(60);
 		setIsGameOver(false);
+		setErrorCount(0);
+		setTotalWords(0);
+		prevInputRef.current = "";
 	};
 
 	const generateRandomSentence = () => {
@@ -77,9 +91,19 @@ const TypingGame = () => {
 
 	const handleChange = (e) => {
 		if (!isGameOver && isGameStarted) {
-			setInput(e.target.value);
-			if (e.target.value === sentence) {
-				setScore((prevScore) => prevScore + 1);
+			const newVal = e.target.value;
+			if (newVal.length > prevInputRef.current.length) {
+				const idx = newVal.length - 1;
+				if (newVal[idx] !== sentence[idx]) {
+					setErrorCount((n) => n + 1);
+				}
+			}
+			prevInputRef.current = newVal;
+			setInput(newVal);
+			if (newVal === sentence) {
+				setScore((s) => s + 1);
+				setTotalWords((w) => w + sentence.trim().split(/\s+/).length);
+				prevInputRef.current = "";
 				setInput("");
 				generateRandomSentence();
 			}

@@ -33,7 +33,6 @@ const PongGame = () => {
 	const touchSideRef = useRef({});
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
-	const [scoreMessage, setScoreMessage] = useState("");
 
 	useEffect(() => {
 		if (gameOver && !scorePosted) {
@@ -50,11 +49,6 @@ const PongGame = () => {
 			game: "pong",
 		});
 		setScorePosted(true);
-		setScoreMessage(
-			result && result.success
-				? "Score posted!"
-				: "Could not post score. Please try again.",
-		);
 	};
 
 	useEffect(() => {
@@ -196,12 +190,6 @@ const PongGame = () => {
 		}
 	}, [gameRunning]);
 
-	useEffect(() => {
-		if (gameOver) {
-			setBounces(0);
-		}
-	}, [gameOver]);
-
 	// Scale the 600×400 canvas to fit the wrapper width on small screens.
 	useEffect(() => {
 		const el = wrapperRef.current;
@@ -281,7 +269,6 @@ const PongGame = () => {
 		setGameOver(false);
 		setGameRunning(false);
 		setScorePosted(false);
-		setScoreMessage("");
 	};
 
 	const pauseGame = () => {
@@ -297,6 +284,7 @@ const PongGame = () => {
 					Left paddle: W / S keys or touch left side. Right paddle: ↑ / ↓ keys
 					or touch right side. Keep the ball in play!
 				</p>
+				<div className="mb-2 font-mono text-ink">Bounces: {bounces}</div>
 				<div className="controls">
 					<button onClick={startGame}>Start</button>
 					<button onClick={restartGame}>Restart</button>
@@ -305,7 +293,7 @@ const PongGame = () => {
 				{/* Sizing wrapper reserves the scaled height so the page doesn't collapse */}
 				<div
 					ref={wrapperRef}
-					className="w-full max-w-[600px]"
+					className="w-full max-w-[600px] my-12"
 					style={{ height: `${400 * scale}px` }}
 				>
 					<div
@@ -332,14 +320,18 @@ const PongGame = () => {
 							ref={ballRef}
 							style={{ top: `${ball.y}px`, left: `${ball.x}px` }}
 						/>
-						{gameOver && <div className="game-over">Game Over</div>}
+						{gameOver && (
+							<div className="game-over">
+								<div className="flex flex-col items-center gap-2">
+									<span>Game Over</span>
+									<span className="font-sans font-semibold text-sm text-text-secondary">
+										{bounces} bounce{bounces !== 1 ? "s" : ""}
+									</span>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
-				{gameOver && scoreMessage && (
-					<div className="mt-4 text-[15px] font-semibold text-text-secondary">
-						{scoreMessage}
-					</div>
-				)}
 			</div>
 			<Footer />
 		</>

@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCookies } from "react-cookie";
 import { createScorePost } from "../actions/Score.action";
+import { useAchievements } from "../context/AchievementContext";
 
 const COLORS = ["red", "green", "blue", "yellow"];
 
@@ -11,6 +12,7 @@ function getRandomColor() {
 }
 
 const SimonSays = () => {
+	const { checkAchievements } = useAchievements();
 	const [sequence, setSequence] = useState([]);
 	const [userInput, setUserInput] = useState([]);
 	const [round, setRound] = useState(1);
@@ -41,6 +43,11 @@ const SimonSays = () => {
 	useEffect(() => {
 		if (gameOver && !scorePosted) {
 			handleSubmitScore();
+			checkAchievements("simonsays", {
+				level: round,
+				streak: round - 1,
+				perfectTiming: false,
+			});
 		}
 		// eslint-disable-next-line
 	}, [gameOver]);

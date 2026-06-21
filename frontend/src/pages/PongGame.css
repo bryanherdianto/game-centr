@@ -8,7 +8,7 @@
 	border: 1px solid #d6d3d1; /* border-medium hairline */
 	border-radius: 0;
 	box-shadow: none;
-	margin: 48px auto;
+	margin: 0 auto;
 	overflow: hidden;
 }
 
@@ -83,11 +83,12 @@
 }
 
 .game-over {
+	position: absolute;
+	inset: 0;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	color: #dc2626; /* error */
-	height: 400px;
 	font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
 	font-weight: 700;
 	font-size: 1.5rem;

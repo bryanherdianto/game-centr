@@ -453,7 +453,7 @@ func CheckAchievementProgress(c *gin.Context) {
 		}
 
 		// Check if achievement conditions are met based on game code and progress
-		if checkAchievementConditions(achievement, input.GameCode, input.Progress) {
+		if checkAchievementConditions(achievement, input.GameCode, input.Progress, userID) {
 			// Award the achievement
 			userAchievement := models.UserAchievement{
 				UserID:        userID,
@@ -522,7 +522,7 @@ func CheckAchievementProgress(c *gin.Context) {
 }
 
 // checkAchievementConditions checks if the achievement conditions are met based on game progress
-func checkAchievementConditions(achievement models.Achievement, gameCode string, progress map[string]interface{}) bool {
+func checkAchievementConditions(achievement models.Achievement, gameCode string, progress map[string]interface{}, userID primitive.ObjectID) bool {
 	// This is where you would implement the logic to check if the achievement conditions are met
 	// For now, we'll just return false since we don't have the actual game logic implemented
 
@@ -549,7 +549,7 @@ func checkAchievementConditions(achievement models.Achievement, gameCode string,
 	case "whackamole":
 		return checkWhackAMoleAchievements(achievement, progress)
 	case "all":
-		return checkGlobalAchievements(achievement, progress, gameCode)
+		return checkGlobalAchievements(achievement, progress, gameCode, userID)
 	}
 
 	return false
@@ -807,7 +807,7 @@ func checkWhackAMoleAchievements(achievement models.Achievement, progress map[st
 	return false
 }
 
-func checkGlobalAchievements(achievement models.Achievement, progress map[string]interface{}, gameCode string) bool {
+func checkGlobalAchievements(achievement models.Achievement, progress map[string]interface{}, gameCode string, userID primitive.ObjectID) bool {
 	// Example implementation
 	switch achievement.Code {
 	case "night_owl":
@@ -821,14 +821,21 @@ func checkGlobalAchievements(achievement models.Achievement, progress map[string
 			return true
 		}
 	case "game_hopper":
-		if gamesPlayed, ok := progress["gamesPlayed"].(map[string]interface{}); ok {
-			// Check if all 10 games have been played
-			return len(gamesPlayed) >= 10
+		distinctGames, err := db.ScoreColl.Distinct(
+			context.Background(), "game", bson.M{"owner": userID},
+		)
+		if err != nil {
+			return false
 		}
+		return len(distinctGames) >= 10
 	case "achievement_hunter":
-		if achievementCount, ok := progress["achievementCount"].(float64); ok && achievementCount >= 20 {
-			return true
+		count, err := db.UserAchievementColl.CountDocuments(
+			context.Background(), bson.M{"user_id": userID},
+		)
+		if err != nil {
+			return false
 		}
+		return count >= 20
 	}
 	return false
 }
