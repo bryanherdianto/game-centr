@@ -19,6 +19,7 @@ const WhackAMole = lazy(() => import("./pages/WhackAMole"));
 const ColorGuess = lazy(() => import("./pages/ColorGuess"));
 const PatternRepeater = lazy(() => import("./pages/PatternRepeater"));
 const QuickMathChallenge = lazy(() => import("./pages/QuickMathChallenge"));
+const Home = lazy(() => import("./pages/Home"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function LoadingFallback() {
@@ -37,97 +38,98 @@ export default function App() {
 			<BrowserRouter>
 				<Suspense fallback={<LoadingFallback />}>
 					<Routes>
-					<Route path="/signup" element={<SignUp />} />
-					<Route path="/login" element={<Login />} />
-					<Route
-						path="/game"
-						element={cookies.isLoggedIn ? <Game /> : <Navigate to="/login" />}
-					/>
-					<Route
-						path="/game/guess"
-						element={
-							cookies.isLoggedIn ? <GuessGame /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/hang-man"
-						element={
-							cookies.isLoggedIn ? <HangmanGame /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/pong"
-						element={
-							cookies.isLoggedIn ? <PongGame /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/typing"
-						element={
-							cookies.isLoggedIn ? <TypingGame /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/simon-says"
-						element={
-							cookies.isLoggedIn ? <SimonSays /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/memory-match"
-						element={
-							cookies.isLoggedIn ? <MemoryMatch /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/whack-a-mole"
-						element={
-							cookies.isLoggedIn ? <WhackAMole /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/color-guess"
-						element={
-							cookies.isLoggedIn ? <ColorGuess /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/game/pattern-repeater"
-						element={
-							cookies.isLoggedIn ? (
-								<PatternRepeater />
-							) : (
-								<Navigate to="/login" />
-							)
-						}
-					/>
-					<Route
-						path="/game/quick-math"
-						element={
-							cookies.isLoggedIn ? (
-								<QuickMathChallenge />
-							) : (
-								<Navigate to="/login" />
-							)
-						}
-					/>
-					<Route
-						path="/post"
-						element={cookies.isLoggedIn ? <Post /> : <Navigate to="/login" />}
-					/>
-					<Route
-						path="/leaderboard"
-						element={
-							cookies.isLoggedIn ? <Leaderboard /> : <Navigate to="/login" />
-						}
-					/>
-					<Route
-						path="/profile"
-						element={
-							cookies.isLoggedIn ? <Profile /> : <Navigate to="/login" />
-						}
-					/>
-					<Route path="*" element={<NotFound />} />
+						<Route path="/" element={<Home />} />
+						<Route path="/signup" element={<SignUp />} />
+						<Route path="/login" element={<Login />} />
+						<Route
+							path="/game"
+							element={cookies.isLoggedIn ? <Game /> : <Navigate to="/login" />}
+						/>
+						<Route
+							path="/game/guess"
+							element={
+								cookies.isLoggedIn ? <GuessGame /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/hang-man"
+							element={
+								cookies.isLoggedIn ? <HangmanGame /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/pong"
+							element={
+								cookies.isLoggedIn ? <PongGame /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/typing"
+							element={
+								cookies.isLoggedIn ? <TypingGame /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/simon-says"
+							element={
+								cookies.isLoggedIn ? <SimonSays /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/memory-match"
+							element={
+								cookies.isLoggedIn ? <MemoryMatch /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/whack-a-mole"
+							element={
+								cookies.isLoggedIn ? <WhackAMole /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/color-guess"
+							element={
+								cookies.isLoggedIn ? <ColorGuess /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/game/pattern-repeater"
+							element={
+								cookies.isLoggedIn ? (
+									<PatternRepeater />
+								) : (
+									<Navigate to="/login" />
+								)
+							}
+						/>
+						<Route
+							path="/game/quick-math"
+							element={
+								cookies.isLoggedIn ? (
+									<QuickMathChallenge />
+								) : (
+									<Navigate to="/login" />
+								)
+							}
+						/>
+						<Route
+							path="/post"
+							element={cookies.isLoggedIn ? <Post /> : <Navigate to="/login" />}
+						/>
+						<Route
+							path="/leaderboard"
+							element={
+								cookies.isLoggedIn ? <Leaderboard /> : <Navigate to="/login" />
+							}
+						/>
+						<Route
+							path="/profile"
+							element={
+								cookies.isLoggedIn ? <Profile /> : <Navigate to="/login" />
+							}
+						/>
+						<Route path="*" element={<NotFound />} />
 					</Routes>
 				</Suspense>
 			</BrowserRouter>
