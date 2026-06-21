@@ -10,8 +10,6 @@ WORKDIR /app
 # Run as a non-root user for security
 RUN adduser -D -u 10001 appuser
 COPY --from=builder /app/app .
-# Env vars (e.g. MONGODB_URI) are injected at runtime via docker-compose env_file / -e.
-# The app uses godotenv with fallback to system env, so no .env is baked into the image.
 USER appuser
 EXPOSE 8080
 CMD ["./app"]

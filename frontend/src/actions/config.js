@@ -4,7 +4,7 @@ import { Cookies } from "react-cookie";
 export const backend_URI =
 	window.location.hostname === "localhost"
 		? "http://localhost:8080"
-		: "https://sbd-numbrhunt.jpmd53.easypanel.host";
+		: "https://game-centr-backend-707527910301.asia-southeast1.run.app";
 
 const cookies = new Cookies();
 
