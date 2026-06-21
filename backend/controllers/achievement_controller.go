@@ -26,13 +26,8 @@ func GetAllAchievements(c *gin.Context) {
 	filter := bson.M{}
 	if gameCode != "" {
 		if gameCode == "all" {
-			// Include both game-specific and global achievements
-			filter = bson.M{
-				"$or": []bson.M{
-					{"game_code": gameCode},
-					{"game_code": bson.M{"$ne": "all"}},
-				},
-			}
+			// Only include global achievements
+			filter = bson.M{"game_code": "all"}
 		} else {
 			// Only include achievements for the specified game and global achievements
 			filter = bson.M{
@@ -88,13 +83,8 @@ func GetUserAchievements(c *gin.Context) {
 	achievementFilter := bson.M{}
 	if gameCode != "" {
 		if gameCode == "all" {
-			// Include both game-specific and global achievements
-			achievementFilter = bson.M{
-				"$or": []bson.M{
-					{"game_code": gameCode},
-					{"game_code": bson.M{"$ne": "all"}},
-				},
-			}
+			// Only include global achievements
+			achievementFilter = bson.M{"game_code": "all"}
 		} else {
 			// Only include achievements for the specified game and global achievements
 			achievementFilter = bson.M{
@@ -244,7 +234,7 @@ func GetUserAchievements(c *gin.Context) {
 
 	// Create user profile
 	userProfile := models.UserProfile{
-		User:         user,
+		User:         user.ToResponse(),
 		Achievements: achievementsWithDetails,
 		Stats:        stats,
 	}
@@ -329,7 +319,13 @@ func AwardAchievement(c *gin.Context) {
 	}
 
 	// Get the inserted ID
-	userAchievement.ID = result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		log.Printf("Error: unexpected InsertedID type for user achievement: %T", result.InsertedID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	userAchievement.ID = id
 
 	// Get game name
 	var gameType models.GameType
@@ -463,7 +459,12 @@ func CheckAchievementProgress(c *gin.Context) {
 			}
 
 			// Get the inserted ID
-			userAchievement.ID = result.InsertedID.(primitive.ObjectID)
+			id, ok := result.InsertedID.(primitive.ObjectID)
+			if !ok {
+				log.Printf("Error: unexpected InsertedID type for user achievement %s: %T", achievement.Code, result.InsertedID)
+				continue
+			}
+			userAchievement.ID = id
 			newlyAwardedAchievements = append(newlyAwardedAchievements, userAchievement)
 
 			// Get game name

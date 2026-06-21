@@ -3,14 +3,30 @@ services:
     build: ./backend
     ports:
       - "8080:8080"
+    # Secrets (e.g. MONGODB_URI) are injected at runtime; the image no longer bakes .env.
     env_file:
       - ./backend/.env
-    depends_on:
-      - frontend
-      
+    healthcheck:
+      # busybox wget ships in the alpine final image
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
-    environment:
-      - REACT_APP_API_URL=http://localhost:8080
+      # nginx-unprivileged listens on 8080 inside the container
+      - "3000:8080"
+    # NOTE: REACT_APP_API_URL was removed — it was dead config. This is a Vite app and
+    # the backend URL is resolved at runtime from window.location.hostname (see src/actions),
+    # so no API URL env/build-arg is consumed by the frontend.
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

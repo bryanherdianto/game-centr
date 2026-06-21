@@ -21,10 +21,46 @@ const WhackAMole = () => {
 	const [timeLeft, setTimeLeft] = useState(GAME_TIME);
 	const [activeMole, setActiveMole] = useState(null);
 	const [gameActive, setGameActive] = useState(false);
-	const [moleTimeout, setMoleTimeout] = useState(null);
 	const timerRef = useRef();
+	// Track every scheduled mole timeout so they can all be cleared together.
+	const moleTimeoutsRef = useRef([]);
+	// Refs mirror state so the self-scheduling mole loop avoids stale closures.
+	const gameActiveRef = useRef(false);
+	const timeLeftRef = useRef(GAME_TIME);
+	const activeMoleRef = useRef(null);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [scoreMessage, setScoreMessage] = useState("");
+
+	const clearMoleTimeouts = () => {
+		moleTimeoutsRef.current.forEach((t) => clearTimeout(t));
+		moleTimeoutsRef.current = [];
+	};
+
+	const scheduleMoleTimeout = (cb, delay) => {
+		const id = setTimeout(cb, delay);
+		moleTimeoutsRef.current.push(id);
+		return id;
+	};
+
+	// Keep refs in sync with state.
+	useEffect(() => {
+		gameActiveRef.current = gameActive;
+	}, [gameActive]);
+	useEffect(() => {
+		timeLeftRef.current = timeLeft;
+	}, [timeLeft]);
+	useEffect(() => {
+		activeMoleRef.current = activeMole;
+	}, [activeMole]);
+
+	// Clean up all timers on unmount.
+	useEffect(() => {
+		return () => {
+			clearTimeout(timerRef.current);
+			clearMoleTimeouts();
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!gameActive && timeLeft === 0 && !scorePosted) {
@@ -34,13 +70,18 @@ const WhackAMole = () => {
 	}, [gameActive, timeLeft]);
 
 	const handleSubmitScore = async () => {
-		await createScorePost({
+		const result = await createScorePost({
 			value: score,
 			text: `Score: ${score}`,
 			owner: cookies.user_id,
 			game: "whackamole",
 		});
 		setScorePosted(true);
+		setScoreMessage(
+			result && result.success
+				? "Score posted!"
+				: "Could not post score. Please try again.",
+		);
 	};
 
 	useEffect(() => {
@@ -50,7 +91,7 @@ const WhackAMole = () => {
 			setGameActive(false);
 			setActiveMole(null);
 			clearTimeout(timerRef.current);
-			clearTimeout(moleTimeout);
+			clearMoleTimeouts();
 		}
 		return () => {
 			clearTimeout(timerRef.current);
@@ -62,7 +103,7 @@ const WhackAMole = () => {
 			popUpMole();
 		} else {
 			setActiveMole(null);
-			clearTimeout(moleTimeout);
+			clearMoleTimeouts();
 		}
 		// eslint-disable-next-line
 	}, [gameActive]);
@@ -72,35 +113,37 @@ const WhackAMole = () => {
 		setActiveMole(nextIdx);
 		const nextTime =
 			Math.random() * (MOLE_POPUP_MAX - MOLE_POPUP_MIN) + MOLE_POPUP_MIN;
-		const timeout = setTimeout(() => {
+		scheduleMoleTimeout(() => {
 			setActiveMole(null);
-			if (gameActive && timeLeft > 0) {
-				setTimeout(popUpMole, 300);
+			if (gameActiveRef.current && timeLeftRef.current > 0) {
+				scheduleMoleTimeout(popUpMole, 300);
 			}
 		}, nextTime);
-		setMoleTimeout(timeout);
 	};
 
 	const handleWhack = (idx) => {
-		if (gameActive && idx === activeMole) {
+		if (gameActiveRef.current && idx === activeMoleRef.current) {
 			setScore((s) => s + 1);
 			setActiveMole(null);
-			clearTimeout(moleTimeout);
-			setTimeout(popUpMole, 200);
+			clearMoleTimeouts();
+			scheduleMoleTimeout(popUpMole, 200);
 		}
 	};
 
 	const startGame = () => {
+		clearMoleTimeouts();
 		setScore(0);
 		setTimeLeft(GAME_TIME);
 		setGameActive(true);
 		setActiveMole(null);
+		setScorePosted(false);
+		setScoreMessage("");
 	};
 
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center py-12 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center py-12 px-4">
 				<div className="max-w-md w-full bg-background/95 border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-3">Whack-a-Mole</h1>
 					<p className="mb-3 text-text-secondary text-center">
@@ -148,6 +191,11 @@ const WhackAMole = () => {
 					{timeLeft === 0 && (
 						<div className="text-success font-semibold mt-4">
 							Time's up! Final Score: {score}
+						</div>
+					)}
+					{timeLeft === 0 && scoreMessage && (
+						<div className="text-[15px] font-semibold text-text-secondary mt-2">
+							{scoreMessage}
 						</div>
 					)}
 				</div>

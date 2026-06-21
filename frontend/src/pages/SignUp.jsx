@@ -18,6 +18,7 @@ export default function SignUp() {
 		username: "",
 		password: "",
 	});
+	const [error, setError] = useState("");
 
 	const change = (e) => {
 		setFormData({
@@ -28,32 +29,41 @@ export default function SignUp() {
 
 	const submitData = (event) => {
 		event.preventDefault();
-		console.log("formData:", formData);
+		setError("");
 
 		signUpUser(formData)
 			.then((response) => {
 				if (response.data != null) {
-					navigate("/");
+					navigate("/login");
 				} else {
-					console.error("Failed to register account");
+					setError("Could not create account. Please try again.");
 				}
 			})
-			.catch((error) => {
-				console.error(error.message);
+			.catch((err) => {
+				console.error(err.message);
+				setError("Could not create account. Please try again.");
 			});
 	};
 
 	return (
 		<>
-			<div className="min-h-screen flex items-center justify-center bg-background py-16 px-4 sm:px-6 lg:px-8">
+			<div className="min-h-[640px] flex items-center justify-center bg-background py-16 px-4 sm:px-6 lg:px-8">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9">
 					<h2 className="text-center text-3xl font-serif text-ink mb-10">
 						Create an Account
 					</h2>
 
 					<form onSubmit={submitData} className="space-y-6">
+						{error && (
+							<div className="bg-error-bg text-error border border-error-border text-[15px] px-4 py-3">
+								{error}
+							</div>
+						)}
 						<div>
-							<label className="block text-[13px] font-semibold text-text-secondary mb-2">
+							<label
+								htmlFor="username"
+								className="block text-[13px] font-semibold text-text-secondary mb-2"
+							>
 								Username
 							</label>
 							<div className="relative">
@@ -61,6 +71,7 @@ export default function SignUp() {
 									<i className="fas fa-user"></i>
 								</div>
 								<input
+									id="username"
 									name="username"
 									type="text"
 									onChange={change}
@@ -73,7 +84,10 @@ export default function SignUp() {
 						</div>
 
 						<div>
-							<label className="block text-[13px] font-semibold text-text-secondary mb-2">
+							<label
+								htmlFor="password"
+								className="block text-[13px] font-semibold text-text-secondary mb-2"
+							>
 								Password
 							</label>
 							<div className="relative">
@@ -81,6 +95,7 @@ export default function SignUp() {
 									<i className="fas fa-lock"></i>
 								</div>
 								<input
+									id="password"
 									name="password"
 									type="password"
 									onChange={change}

@@ -10,7 +10,7 @@ type Score struct {
 	ID        primitive.ObjectID     `bson:"_id,omitempty" json:"_id,omitempty"`
 	Owner     primitive.ObjectID     `bson:"owner" json:"owner" binding:"required"`
 	Game      string                 `bson:"game" json:"game" binding:"required"` // Game type identifier
-	Value     int                    `bson:"value" json:"value" binding:"required"`
+	Value     int                    `bson:"value" json:"value"`
 	Text      string                 `bson:"text" json:"text"`
 	Metadata  map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"` // Additional game-specific data
 	Comments  []primitive.ObjectID   `bson:"comments" json:"comments"`

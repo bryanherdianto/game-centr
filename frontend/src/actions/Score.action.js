@@ -1,9 +1,5 @@
 import axios from "axios";
-
-const backend_URI =
-	window.location.hostname === "localhost"
-		? "http://localhost:8080"
-		: "https://sbd-numbrhunt.jpmd53.easypanel.host";
+import { backend_URI } from "./config";
 
 const baseApiResponse = (data, isSuccess) => {
 	return {
@@ -20,8 +16,6 @@ export const createScorePost = async (input) => {
 			input,
 		);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -34,8 +28,6 @@ export const getAllScores = async () => {
 	try {
 		const response = await axios.get(`${backend_URI}/score`);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -48,8 +40,6 @@ export const getScoresByGame = async (game) => {
 	try {
 		const response = await axios.get(`${backend_URI}/game/${game}/score`);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -66,8 +56,6 @@ export const addComment = async (input) => {
 			{ author, text },
 		);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -83,8 +71,6 @@ export const getGlobalLeaderboard = async (options = {}) => {
 			`${backend_URI}/game/leaderboard?limit=${limit}`,
 		);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -100,8 +86,6 @@ export const getGameLeaderboard = async (gameCode, options = {}) => {
 			`${backend_URI}/game/${gameCode}/leaderboard?timeFrame=${timeFrame}&limit=${limit}`,
 		);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return {
 			success: true,
 			data: response.data.data,
@@ -119,8 +103,6 @@ export const getAllGameTypes = async () => {
 	try {
 		const response = await axios.get(`${backend_URI}/game-types`);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -133,8 +115,6 @@ export const getGameTypeByCode = async (gameCode) => {
 	try {
 		const response = await axios.get(`${backend_URI}/game-types/${gameCode}`);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
 		console.error(error);
@@ -147,8 +127,6 @@ export const getUserGameStats = async (userId) => {
 	try {
 		const response = await axios.get(`${backend_URI}/user/${userId}/stats`);
 
-		console.log("Response from Backend");
-		console.log(response.data);
 		return {
 			success: true,
 			user: response.data.user,

@@ -116,7 +116,7 @@ const QuickMathChallenge = () => {
 	};
 
 	const handleInput = (e) => {
-		setInput(e.target.value.replace(/[^0-9\-]/g, ""));
+		setInput(e.target.value.replace(/[^0-9-]/g, ""));
 	};
 
 	const handleSubmit = (e) => {
@@ -174,7 +174,7 @@ const QuickMathChallenge = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center bg-background py-16 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center bg-background py-16 px-4">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-3">
 						Quick Math Challenge

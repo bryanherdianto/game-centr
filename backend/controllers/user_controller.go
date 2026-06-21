@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"netgames-go-server/db"
 	"netgames-go-server/models"
@@ -57,15 +58,25 @@ func AddUser(c *gin.Context) {
 	// Insert user into database
 	result, err := db.UserColl.InsertOne(ctx, user)
 	if err != nil {
+		log.Printf("Error inserting user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
 	// Get the inserted user with ID
-	user.ID = result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		log.Printf("Error: unexpected InsertedID type for user: %T", result.InsertedID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+	user.ID = id
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -97,24 +108,27 @@ func Login(c *gin.Context) {
 	err := db.UserColl.FindOne(ctx, bson.M{"username": loginData.Username}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			c.JSON(http.StatusBadRequest, gin.H{
+			log.Printf("Login failed: user not found for username %q", loginData.Username)
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"message": "User not found",
+				"message": "Invalid username or password",
 			})
 			return
 		}
+		log.Printf("Error finding user during login: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
 	// Verify password
 	if !user.CheckPassword(loginData.Password) {
-		c.JSON(http.StatusBadRequest, gin.H{
+		log.Printf("Login failed: invalid password for username %q", loginData.Username)
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "Invalid Password",
+			"message": "Invalid username or password",
 		})
 		return
 	}
@@ -137,9 +151,10 @@ func GetAllUsers(c *gin.Context) {
 
 	cursor, err := db.UserColl.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
+		log.Printf("Error finding users: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -149,9 +164,10 @@ func GetAllUsers(c *gin.Context) {
 	for cursor.Next(ctx) {
 		var user models.User
 		if err := cursor.Decode(&user); err != nil {
+			log.Printf("Error decoding user: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": err.Error(),
+				"message": "Internal server error",
 			})
 			return
 		}
@@ -159,9 +175,10 @@ func GetAllUsers(c *gin.Context) {
 	}
 
 	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error iterating users: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -198,9 +215,10 @@ func GetUserById(c *gin.Context) {
 			})
 			return
 		}
+		log.Printf("Error finding user by ID: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -238,9 +256,10 @@ func GetUserScores(c *gin.Context) {
 			})
 			return
 		}
+		log.Printf("Error finding user for scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -258,9 +277,10 @@ func GetUserScores(c *gin.Context) {
 	// Find all scores for user
 	cursor, err := db.ScoreColl.Find(ctx, bson.M{"_id": bson.M{"$in": user.Scores}})
 	if err != nil {
+		log.Printf("Error finding scores for user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -269,9 +289,10 @@ func GetUserScores(c *gin.Context) {
 	// Collect all scores
 	var scores []models.Score
 	if err := cursor.All(ctx, &scores); err != nil {
+		log.Printf("Error decoding scores for user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -291,8 +312,6 @@ func GetUserScores(c *gin.Context) {
 		if len(score.Comments) > 0 {
 			commentsCursor, err := db.CommentColl.Find(ctx, bson.M{"_id": bson.M{"$in": score.Comments}})
 			if err == nil {
-				defer commentsCursor.Close(ctx)
-
 				var comments []models.Comment
 				if err := commentsCursor.All(ctx, &comments); err == nil {
 					for _, comment := range comments {
@@ -310,14 +329,17 @@ func GetUserScores(c *gin.Context) {
 						}
 					}
 				}
+				commentsCursor.Close(ctx)
 			}
 		}
 
 		userScores = append(userScores, models.ScoreWithUserDetails{
 			ID:        score.ID,
 			Owner:     owner.ToResponse(),
+			Game:      score.Game,
 			Value:     score.Value,
 			Text:      score.Text,
+			Metadata:  score.Metadata,
 			Comments:  commentsWithDetails,
 			CreatedAt: score.CreatedAt,
 			UpdatedAt: score.UpdatedAt,

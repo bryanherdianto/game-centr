@@ -5,8 +5,12 @@ RUN go mod download
 COPY . .
 RUN go build -o app
 
-FROM alpine:latest
-WORKDIR /root/
+FROM alpine:3.20
+WORKDIR /app
+# Run as a non-root user for security
+RUN adduser -D -u 10001 appuser
 COPY --from=builder /app/app .
+# Env vars are injected by the hosting platform; no .env is baked in.
+USER appuser
 EXPOSE 8080
 CMD ["./app"]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCookies } from "react-cookie";
@@ -26,6 +26,22 @@ const MemoryMatch = () => {
 	const [cooldown, setCooldown] = useState(false);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [scoreMessage, setScoreMessage] = useState("");
+	const timeoutsRef = useRef([]);
+
+	const trackTimeout = (cb, delay) => {
+		const id = setTimeout(cb, delay);
+		timeoutsRef.current.push(id);
+		return id;
+	};
+
+	// Clear any pending timeouts on unmount.
+	useEffect(() => {
+		return () => {
+			timeoutsRef.current.forEach((t) => clearTimeout(t));
+			timeoutsRef.current = [];
+		};
+	}, []);
 
 	useEffect(() => {
 		if (gameOver && !scorePosted) {
@@ -38,13 +54,18 @@ const MemoryMatch = () => {
 		// Contoh logika skor: makin sedikit moves & waktu makin tinggi skor
 		const scoreValue = Math.max(1000 - (moves * 10 + timer * 5), 0);
 		const scoreText = `Moves: ${moves}, Time: ${timer}s`;
-		await createScorePost({
+		const result = await createScorePost({
 			value: scoreValue,
 			text: scoreText,
 			owner: cookies.user_id,
 			game: "memorymatch",
 		});
 		setScorePosted(true);
+		setScoreMessage(
+			result && result.success
+				? "Score posted!"
+				: "Could not post score. Please try again.",
+		);
 	};
 
 	useEffect(() => {
@@ -79,6 +100,8 @@ const MemoryMatch = () => {
 		setTimer(0);
 		setIsRunning(true);
 		setGameOver(false);
+		setScorePosted(false);
+		setScoreMessage("");
 	};
 
 	const handleFlip = (idx) => {
@@ -91,19 +114,19 @@ const MemoryMatch = () => {
 		)
 			return;
 		setCooldown(true);
-		setTimeout(() => setCooldown(false), 600);
+		trackTimeout(() => setCooldown(false), 600);
 		const newFlipped = [...flipped, idx];
 		setFlipped(newFlipped);
 		if (newFlipped.length === 2) {
 			setMoves((m) => m + 1);
 			const [first, second] = newFlipped;
 			if (cards[first].icon === cards[second].icon) {
-				setTimeout(() => {
+				trackTimeout(() => {
 					setMatched((prev) => [...prev, first, second]);
 					setFlipped([]);
 				}, 600);
 			} else {
-				setTimeout(() => setFlipped([]), 900);
+				trackTimeout(() => setFlipped([]), 900);
 			}
 		}
 	};
@@ -111,7 +134,7 @@ const MemoryMatch = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center bg-background py-16 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center bg-background py-16 px-4">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-4">Memory Match</h1>
 					<p className="mb-3 text-text-secondary text-center">
@@ -145,6 +168,11 @@ const MemoryMatch = () => {
 							<div className="bg-success-bg text-success border border-success-border font-semibold mb-4 px-3 py-1 text-center">
 								You matched all pairs in {moves} moves and {timer} seconds!
 							</div>
+							{scoreMessage && (
+								<div className="text-[15px] font-semibold text-text-secondary mb-4">
+									{scoreMessage}
+								</div>
+							)}
 							<button
 								onClick={startGame}
 								className="bg-primary text-background px-6 py-3 font-semibold text-[15px] border border-primary hover:bg-primary-hover active:bg-primary-active"

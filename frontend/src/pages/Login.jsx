@@ -17,6 +17,7 @@ export default function Login() {
 		username: cookies.username || "",
 		password: "",
 	});
+	const [error, setError] = useState("");
 
 	useEffect(() => {
 		if (cookies.isLoggedIn) {
@@ -33,37 +34,51 @@ export default function Login() {
 
 	const submitData = (event) => {
 		event.preventDefault();
-		console.log("formData:", formData);
+		setError("");
+
+		const cookieOptions = {
+			path: "/",
+			sameSite: "strict",
+			secure: window.location.protocol === "https:",
+		};
 
 		loginUser(formData)
 			.then((response) => {
 				if (response.data) {
-					console.log(response);
-					setCookies("user_id", response.data._id, { path: "/" });
-					setCookies("username", response.data.username, { path: "/" });
-					setCookies("isLoggedIn", true, { path: "/" });
-					setCookies("score", 0, { path: "/" });
+					setCookies("user_id", response.data._id, cookieOptions);
+					setCookies("username", response.data.username, cookieOptions);
+					setCookies("isLoggedIn", true, cookieOptions);
+					setCookies("score", 0, cookieOptions);
 					navigate("/game");
 				} else {
-					console.error("Failed to login");
+					setError("Invalid username or password");
 				}
 			})
-			.catch((error) => {
-				console.error("Login failed:", error.message);
+			.catch((err) => {
+				console.error("Login failed:", err.message);
+				setError("Invalid username or password");
 			});
 	};
 
 	return (
 		<>
-			<div className="min-h-screen flex items-center justify-center bg-background py-16 px-4 sm:px-6 lg:px-8">
+			<div className="min-h-[640px] flex items-center justify-center bg-background py-16 px-4 sm:px-6 lg:px-8">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9">
 					<h2 className="text-center text-3xl font-serif text-ink mb-10">
 						Login to GameCentr
 					</h2>
 
 					<form onSubmit={submitData} className="space-y-6">
+						{error && (
+							<div className="bg-error-bg text-error border border-error-border text-[15px] px-4 py-3">
+								{error}
+							</div>
+						)}
 						<div>
-							<label className="block text-[13px] font-semibold text-text-secondary mb-2">
+							<label
+								htmlFor="username"
+								className="block text-[13px] font-semibold text-text-secondary mb-2"
+							>
 								Username
 							</label>
 							<div className="relative">
@@ -71,6 +86,7 @@ export default function Login() {
 									<i className="fas fa-user"></i>
 								</div>
 								<input
+									id="username"
 									name="username"
 									type="text"
 									onChange={change}
@@ -83,7 +99,10 @@ export default function Login() {
 						</div>
 
 						<div>
-							<label className="block text-[13px] font-semibold text-text-secondary mb-2">
+							<label
+								htmlFor="password"
+								className="block text-[13px] font-semibold text-text-secondary mb-2"
+							>
 								Password
 							</label>
 							<div className="relative">
@@ -91,6 +110,7 @@ export default function Login() {
 									<i className="fas fa-lock"></i>
 								</div>
 								<input
+									id="password"
 									name="password"
 									type="password"
 									onChange={change}

@@ -11,7 +11,7 @@ const AchievementContext = createContext();
  * Manages achievement state and notifications across the application
  */
 export const AchievementProvider = ({ children }) => {
-	const [cookies] = useCookies(["userId"]);
+	const [cookies] = useCookies(["user_id"]);
 	const [notifications, setNotifications] = useState([]);
 	const [achievementQueue, setAchievementQueue] = useState([]);
 
@@ -41,11 +41,11 @@ export const AchievementProvider = ({ children }) => {
 	 * @param {Object} progress - The game progress data
 	 */
 	const checkAchievements = async (gameCode, progress) => {
-		if (!cookies.userId) return;
+		if (!cookies.user_id) return;
 
 		try {
 			const response = await checkAchievementProgress(
-				cookies.userId,
+				cookies.user_id,
 				gameCode,
 				progress,
 			);

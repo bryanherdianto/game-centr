@@ -93,7 +93,7 @@ const TypingGame = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="container min-h-screen bg-background">
+			<div className="container min-h-[640px] bg-background">
 				<h1 className="title">Sentence Typing Game</h1>
 				{!isGameStarted && (
 					<button onClick={handleStartGame} className="start-button">

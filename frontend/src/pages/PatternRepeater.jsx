@@ -48,8 +48,25 @@ const PatternRepeater = () => {
 	const [gameOver, setGameOver] = useState(false);
 	const [win, setWin] = useState(false);
 	const timeoutRef = useRef();
+	const timeoutsRef = useRef([]);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [scoreMessage, setScoreMessage] = useState("");
+
+	const trackTimeout = (cb, delay) => {
+		const id = setTimeout(cb, delay);
+		timeoutsRef.current.push(id);
+		return id;
+	};
+
+	// Clear any pending timeouts on unmount.
+	useEffect(() => {
+		return () => {
+			clearTimeout(timeoutRef.current);
+			timeoutsRef.current.forEach((t) => clearTimeout(t));
+			timeoutsRef.current = [];
+		};
+	}, []);
 
 	useEffect(() => {
 		if ((gameOver || win) && !scorePosted) {
@@ -59,13 +76,18 @@ const PatternRepeater = () => {
 	}, [gameOver, win]);
 
 	const handleSubmitScore = async () => {
-		await createScorePost({
+		const result = await createScorePost({
 			value: score,
 			text: win ? "Win!" : "Game Over",
 			owner: cookies.user_id,
 			game: "patternrepeater",
 		});
 		setScorePosted(true);
+		setScoreMessage(
+			result && result.success
+				? "Score posted!"
+				: "Could not post score. Please try again.",
+		);
 	};
 
 	// Keep arrow keys from scrolling the page the whole time we're on this screen.
@@ -126,7 +148,7 @@ const PatternRepeater = () => {
 					setWin(true);
 					setGameOver(true);
 				} else {
-					setTimeout(() => {
+					trackTimeout(() => {
 						setRound((r) => r + 1);
 						nextRound(round + 1);
 					}, 800);
@@ -155,13 +177,15 @@ const PatternRepeater = () => {
 		setScore(0);
 		setGameOver(false);
 		setWin(false);
-		setTimeout(() => setShowing(true), 500);
+		setScorePosted(false);
+		setScoreMessage("");
+		trackTimeout(() => setShowing(true), 500);
 	};
 
-	const nextRound = (r) => {
+	const nextRound = () => {
 		setPattern((p) => [...p, getRandomArrow().key]);
 		setUserInput([]);
-		setTimeout(() => setShowing(true), 600);
+		trackTimeout(() => setShowing(true), 600);
 	};
 
 	const handleRestart = () => {
@@ -171,7 +195,7 @@ const PatternRepeater = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center bg-background py-16 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center bg-background py-16 px-4">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-3">
 						Pattern Repeater
@@ -223,6 +247,11 @@ const PatternRepeater = () => {
 							<div className="mb-2 text-text-secondary">
 								Final Score: {score} / {MAX_ROUNDS}
 							</div>
+							{scoreMessage && (
+								<div className="text-[15px] font-semibold text-text-secondary mb-4">
+									{scoreMessage}
+								</div>
+							)}
 							<button
 								onClick={handleRestart}
 								className="bg-primary text-background px-6 py-3 font-semibold text-[15px] border border-primary hover:bg-primary-hover active:bg-primary-active"

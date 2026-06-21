@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"netgames-go-server/db"
 	"netgames-go-server/models"
@@ -35,9 +36,10 @@ func GetAllScores(c *gin.Context) {
 
 	cursor, err := db.ScoreColl.Find(ctx, filter, findOptions)
 	if err != nil {
+		log.Printf("Error finding scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -45,9 +47,10 @@ func GetAllScores(c *gin.Context) {
 
 	var scores []models.Score
 	if err := cursor.All(ctx, &scores); err != nil {
+		log.Printf("Error decoding scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -118,9 +121,10 @@ func GetAllGameScores(c *gin.Context) {
 
 	cursor, err := db.ScoreColl.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
+		log.Printf("Error finding game scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -128,9 +132,10 @@ func GetAllGameScores(c *gin.Context) {
 
 	var scores []models.Score
 	if err := cursor.All(ctx, &scores); err != nil {
+		log.Printf("Error decoding game scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -215,9 +220,10 @@ func GetScoreById(c *gin.Context) {
 			})
 			return
 		}
+		log.Printf("Error finding score by ID: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -290,7 +296,7 @@ func PostScore(c *gin.Context) {
 	var scoreRequest struct {
 		Owner    primitive.ObjectID     `json:"owner" binding:"required"`
 		Game     string                 `json:"game"`
-		Value    int                    `json:"value" binding:"required"`
+		Value    int                    `json:"value"`
 		Text     string                 `json:"text"`
 		Metadata map[string]interface{} `json:"metadata,omitempty"`
 	}
@@ -299,6 +305,15 @@ func PostScore(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
+		})
+		return
+	}
+
+	// Reject negative score values (0 is allowed)
+	if scoreRequest.Value < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Score value cannot be negative",
 		})
 		return
 	}
@@ -314,9 +329,10 @@ func PostScore(c *gin.Context) {
 			})
 			return
 		}
+		log.Printf("Error finding user for score: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -352,15 +368,25 @@ func PostScore(c *gin.Context) {
 	// Insert score into database
 	result, err := db.ScoreColl.InsertOne(ctx, score)
 	if err != nil {
+		log.Printf("Error inserting score: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
 	// Get the inserted score with ID
-	score.ID = result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		log.Printf("Error: unexpected InsertedID type for score: %T", result.InsertedID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+	score.ID = id
 
 	// Add score to user scores array
 	_, err = db.UserColl.UpdateOne(
@@ -424,9 +450,16 @@ func AddCommentToScore(c *gin.Context) {
 		return
 	}
 
-	// Check if score exists and belongs to the correct game
+	// Check if score exists and belongs to the correct game.
+	// On the game-scoped route gameCode is present and the score must match it;
+	// on the legacy route gameCode is empty so we match by _id only.
+	scoreFilter := bson.M{"_id": objectId}
+	if gameCode != "" {
+		scoreFilter["game"] = gameCode
+	}
+
 	var score models.Score
-	err = db.ScoreColl.FindOne(ctx, bson.M{"_id": objectId, "game": gameCode}).Decode(&score)
+	err = db.ScoreColl.FindOne(ctx, scoreFilter).Decode(&score)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -448,14 +481,24 @@ func AddCommentToScore(c *gin.Context) {
 	// Insert comment into database
 	result, err := db.CommentColl.InsertOne(ctx, comment)
 	if err != nil {
+		log.Printf("Error inserting comment: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
-	comment.ID = result.InsertedID.(primitive.ObjectID)
+	commentID, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		log.Printf("Error: unexpected InsertedID type for comment: %T", result.InsertedID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+	comment.ID = commentID
 
 	// Add comment to score comments array
 	_, err = db.ScoreColl.UpdateOne(
@@ -464,9 +507,10 @@ func AddCommentToScore(c *gin.Context) {
 		bson.M{"$push": bson.M{"comments": comment.ID}, "$set": bson.M{"updatedAt": now}},
 	)
 	if err != nil {
+		log.Printf("Error updating score with comment: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}

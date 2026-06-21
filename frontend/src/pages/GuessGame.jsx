@@ -28,13 +28,18 @@ export default function GuessGame() {
 	});
 	const navigate = useNavigate();
 	const { checkAchievements } = useAchievements();
+	const cookieOptions = {
+		path: "/",
+		sameSite: "strict",
+		secure: window.location.protocol === "https:",
+	};
 
 	useEffect(() => {
 		inputRef.current.focus(); // Focus input on mount
 
 		if (!cookies.score) {
 			// initialize score
-			setCookies("score", 0, { path: "/" });
+			setCookies("score", 0, cookieOptions);
 			setScore(0);
 		} else {
 			setScore(Number(cookies.score));
@@ -97,7 +102,7 @@ export default function GuessGame() {
 			guessRef.current.textContent = "Congrats! You found the number.";
 			guessRef.current.style.color = "#65a30d";
 			setScore(score + 1);
-			setCookies("score", score, { path: "/" });
+			setCookies("score", score, cookieOptions);
 			setButtonText("Replay");
 			setDisabled(true);
 			newChance = chance;
@@ -142,7 +147,7 @@ export default function GuessGame() {
 			guessRef.current.textContent = "You lost the game";
 			guessRef.current.style.color = "#dc2626";
 			setScore(0);
-			setCookies("score", 0, { path: "/" });
+			setCookies("score", 0, cookieOptions);
 			setButtonText("Replay");
 			setDisabled(true);
 			inputRef.current.disabled = true;
@@ -201,7 +206,7 @@ export default function GuessGame() {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen bg-background py-16 px-4 sm:px-6 lg:px-8">
+			<div className="min-h-[640px] bg-background py-16 px-4 sm:px-6 lg:px-8">
 				<div className="max-w-md mx-auto bg-background border border-border-subtle">
 					<div className="p-9">
 						<h1 className="text-3xl font-serif text-center text-ink mb-8">

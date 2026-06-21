@@ -1,16 +1,5 @@
 import axios from "axios";
-
-const backend_URI =
-	window.location.hostname === "localhost"
-		? "http://localhost:8080"
-		: "https://sbd-numbrhunt.jpmd53.easypanel.host";
-
-const baseApiResponse = (data, isSuccess) => {
-	return {
-		success: isSuccess,
-		data: data || null,
-	};
-};
+import { backend_URI } from "./config";
 
 /**
  * Get all achievements

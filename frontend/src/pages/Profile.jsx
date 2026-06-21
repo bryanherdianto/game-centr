@@ -61,7 +61,7 @@ const Profile = () => {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col bg-background">
+		<div className="min-h-[640px] flex flex-col bg-background">
 			<Navbar />
 
 			<div className="container mx-auto px-4 py-12 flex-grow">

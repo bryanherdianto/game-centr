@@ -42,7 +42,7 @@ Whether you're here for a quick break or a longer gaming session, GameCentr has 
 
 ![docker drawio](https://i.imgur.com/IHAAXuK.png)
 
-## Setup Instructions
+## Docker Setup Instructions
 
 Before you start, ensure you prepare a .env file in the root directory of the project with the following content:
 
@@ -59,7 +59,7 @@ cd GameCentr
 docker-compose up -d --build
 ```
 
-## Referensi
+## References
 
 - GeeksforGeeks, “Design a typing speed test game using JavaScript,” GeeksforGeeks, Jul. 29, 2024. <https://www.geeksforgeeks.org/design-a-typing-speed-test-game-using-javascript/>
 - GeeksforGeeks, “Ping Pong Game using React,” GeeksforGeeks, Jul. 23, 2024. <https://www.geeksforgeeks.org/ping-pong-game-using-react/>

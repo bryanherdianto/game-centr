@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"netgames-go-server/db"
 	"netgames-go-server/models"
@@ -123,23 +124,26 @@ func GetGameLeaderboard(c *gin.Context) {
 	var gameType models.GameType
 	err = db.GameTypeColl.FindOne(ctx, bson.M{"game_code": gameCode}).Decode(&gameType)
 	if err != nil {
+		log.Printf("Error retrieving game type %q: %v", gameCode, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "Error retrieving game type: " + err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
-	// Set options to sort by score in descending order and limit results
+	// Set options to sort by score descending, with createdAt ascending as a
+	// tiebreaker so equal scores rank by who achieved them first, and limit results
 	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "value", Value: -1}})
+	findOptions.SetSort(bson.D{{Key: "value", Value: -1}, {Key: "createdAt", Value: 1}})
 	findOptions.SetLimit(int64(limit))
 
 	cursor, err := db.ScoreColl.Find(ctx, filter, findOptions)
 	if err != nil {
+		log.Printf("Error finding leaderboard scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
@@ -147,15 +151,17 @@ func GetGameLeaderboard(c *gin.Context) {
 
 	var scores []models.Score
 	if err := cursor.All(ctx, &scores); err != nil {
+		log.Printf("Error decoding leaderboard scores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Internal server error",
 		})
 		return
 	}
 
 	var leaderboardEntries []gin.H
-	for i, score := range scores {
+	rank := 0
+	for _, score := range scores {
 		// Populate owner
 		var owner models.User
 		err := db.UserColl.FindOne(ctx, bson.M{"_id": score.Owner}).Decode(&owner)
@@ -163,8 +169,11 @@ func GetGameLeaderboard(c *gin.Context) {
 			continue // Skip if owner not found
 		}
 
+		// Increment rank only for entries we actually include so ranks stay
+		// contiguous even when an owner lookup is skipped
+		rank++
 		leaderboardEntries = append(leaderboardEntries, gin.H{
-			"rank":        i + 1,
+			"rank":        rank,
 			"score":       score.Value,
 			"user":        owner.ToResponse(),
 			"metadata":    score.Metadata,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import {
@@ -119,41 +119,45 @@ export default function Leaderboard() {
 	};
 
 	// Filter the leaderboard data based on score filters
-	const filteredData = leaderboardData.filter((entry) => {
-		let passesFilter = true;
+	const filteredData = useMemo(() => {
+		return leaderboardData.filter((entry) => {
+			let passesFilter = true;
 
-		if (useMinScore && minScore !== "") {
-			passesFilter = passesFilter && entry.score >= parseInt(minScore);
-		}
+			if (useMinScore && minScore !== "") {
+				passesFilter = passesFilter && entry.score >= parseInt(minScore);
+			}
 
-		if (useMaxScore && maxScore !== "") {
-			passesFilter = passesFilter && entry.score <= parseInt(maxScore);
-		}
+			if (useMaxScore && maxScore !== "") {
+				passesFilter = passesFilter && entry.score <= parseInt(maxScore);
+			}
 
-		return passesFilter;
-	});
+			return passesFilter;
+		});
+	}, [leaderboardData, useMinScore, minScore, useMaxScore, maxScore]);
 
 	// Sort the filtered leaderboard data
-	const sortedData = [...filteredData].sort((a, b) => {
-		let valueA, valueB;
+	const sortedData = useMemo(() => {
+		return [...filteredData].sort((a, b) => {
+			let valueA, valueB;
 
-		if (sortField === "user") {
-			valueA = a.user.username.toLowerCase();
-			valueB = b.user.username.toLowerCase();
-			return sortDirection === "asc"
-				? valueA.localeCompare(valueB)
-				: valueB.localeCompare(valueA);
-		} else if (sortField === "score") {
-			valueA = a.score;
-			valueB = b.score;
-			return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
-		} else if (sortField === "rank") {
-			valueA = a.rank;
-			valueB = b.rank;
-			return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
-		}
-		return 0;
-	});
+			if (sortField === "user") {
+				valueA = a.user.username.toLowerCase();
+				valueB = b.user.username.toLowerCase();
+				return sortDirection === "asc"
+					? valueA.localeCompare(valueB)
+					: valueB.localeCompare(valueA);
+			} else if (sortField === "score") {
+				valueA = a.score;
+				valueB = b.score;
+				return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
+			} else if (sortField === "rank") {
+				valueA = a.rank;
+				valueB = b.rank;
+				return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
+			}
+			return 0;
+		});
+	}, [filteredData, sortField, sortDirection]);
 
 	// Get the selected game type
 	const selectedGameType = gameTypes.find(
@@ -163,7 +167,7 @@ export default function Leaderboard() {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen bg-background py-20 px-4 sm:px-6 lg:px-8">
+			<div className="min-h-[640px] bg-background py-20 px-4 sm:px-6 lg:px-8">
 				<div className="max-w-5xl mx-auto">
 					<h1 className="font-serif text-4xl text-center text-ink mb-12">
 						Leaderboards
@@ -533,9 +537,9 @@ export default function Leaderboard() {
 											</td>
 										</tr>
 									) : (
-										sortedData.map((entry, index) => (
+										sortedData.map((entry) => (
 											<tr
-												key={index}
+												key={entry.user._id}
 												className="border-b border-border-subtle hover:bg-surface"
 											>
 												<td className="px-6 py-4 whitespace-nowrap text-[15px] font-semibold text-ink font-mono">

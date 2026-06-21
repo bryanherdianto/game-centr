@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCookies } from "react-cookie";
@@ -21,6 +21,22 @@ const SimonSays = () => {
 	const [cooldown, setCooldown] = useState(false);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [scoreMessage, setScoreMessage] = useState("");
+	const timeoutsRef = useRef([]);
+
+	const trackTimeout = (cb, delay) => {
+		const id = setTimeout(cb, delay);
+		timeoutsRef.current.push(id);
+		return id;
+	};
+
+	// Clear any pending timeouts on unmount.
+	useEffect(() => {
+		return () => {
+			timeoutsRef.current.forEach((t) => clearTimeout(t));
+			timeoutsRef.current = [];
+		};
+	}, []);
 
 	useEffect(() => {
 		if (gameOver && !scorePosted) {
@@ -30,13 +46,18 @@ const SimonSays = () => {
 	}, [gameOver]);
 
 	const handleSubmitScore = async () => {
-		await createScorePost({
+		const result = await createScorePost({
 			value: round,
 			text: `Round: ${round}`,
 			owner: cookies.user_id,
 			game: "simonsays",
 		});
 		setScorePosted(true);
+		setScoreMessage(
+			result && result.success
+				? "Score posted!"
+				: "Could not post score. Please try again.",
+		);
 	};
 
 	useEffect(() => {
@@ -50,7 +71,7 @@ const SimonSays = () => {
 		setIsUserTurn(false);
 		setSequence((prev) => {
 			const newSequence = [...prev, getRandomColor()];
-			setTimeout(() => {
+			trackTimeout(() => {
 				playSequence(newSequence);
 			}, 800);
 			return newSequence;
@@ -71,11 +92,11 @@ const SimonSays = () => {
 	const handleColorClick = (color) => {
 		if (!isUserTurn || gameOver || cooldown) return;
 		setCooldown(true);
-		setTimeout(() => setCooldown(false), 400);
+		trackTimeout(() => setCooldown(false), 400);
 		const newInput = [...userInput, color];
 		setUserInput(newInput);
 		setActiveColor(color);
-		setTimeout(() => setActiveColor(null), 200);
+		trackTimeout(() => setActiveColor(null), 200);
 		if (sequence[newInput.length - 1] !== color) {
 			setMessage("Wrong! Game Over.");
 			setGameOver(true);
@@ -85,7 +106,7 @@ const SimonSays = () => {
 		if (newInput.length === sequence.length) {
 			setMessage("Correct! Next round...");
 			setIsUserTurn(false);
-			setTimeout(() => {
+			trackTimeout(() => {
 				setRound((r) => r + 1);
 				startNewRound();
 			}, 1000);
@@ -100,7 +121,9 @@ const SimonSays = () => {
 		setMessage("");
 		setActiveColor(null);
 		setGameOver(false);
-		setTimeout(() => {
+		setScorePosted(false);
+		setScoreMessage("");
+		trackTimeout(() => {
 			setSequence([]); // ensure sequence is cleared before new round
 			startNewRound();
 		}, 500);
@@ -109,7 +132,7 @@ const SimonSays = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center bg-background py-16 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center bg-background py-16 px-4">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-3">Simon Says</h1>
 					<p className="mb-3 text-text-secondary text-center">
@@ -143,6 +166,11 @@ const SimonSays = () => {
 							<div className="text-error font-semibold mb-4">
 								Game Over! You reached round {round}.
 							</div>
+							{scoreMessage && (
+								<div className="text-[15px] font-semibold text-text-secondary mb-4">
+									{scoreMessage}
+								</div>
+							)}
 							<button
 								onClick={handleRestart}
 								className="bg-primary text-background px-6 py-3 font-semibold text-[15px] border border-primary hover:bg-primary-hover active:bg-primary-active"

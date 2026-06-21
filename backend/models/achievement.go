@@ -46,7 +46,7 @@ type AchievementWithDetails struct {
 
 // UserProfile represents a user's profile with their achievements
 type UserProfile struct {
-	User         User                     `json:"user"`
+	User         UserResponse             `json:"user"`
 	Achievements []AchievementWithDetails `json:"achievements"`
 	Stats        map[string]interface{}   `json:"stats"`
 }

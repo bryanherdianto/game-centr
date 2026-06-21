@@ -2,15 +2,23 @@ import { useCookies } from "react-cookie";
 import { NavLink } from "react-router-dom";
 
 export default function Navbar() {
-	const [cookies, setCookies] = useCookies(["username", "isLoggedIn", "score"]);
+	const [cookies, , removeCookie] = useCookies([
+		"user_id",
+		"username",
+		"isLoggedIn",
+		"score",
+	]);
 
 	const handleLogout = () => {
-		setCookies("score", 0, { path: "/" });
-		setCookies("isLoggedIn", false, { path: "/" });
+		const cookieOptions = { path: "/" };
+		removeCookie("user_id", cookieOptions);
+		removeCookie("username", cookieOptions);
+		removeCookie("isLoggedIn", cookieOptions);
+		removeCookie("score", cookieOptions);
 	};
 
 	return (
-		<nav className="bg-surface border-b border-border-subtle">
+		<nav className="bg-surface border-b border-border-subtle sticky top-0 z-50">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex justify-between h-16">
 					<div className="flex items-center">

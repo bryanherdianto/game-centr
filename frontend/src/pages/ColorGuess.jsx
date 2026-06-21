@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCookies } from "react-cookie";
@@ -143,6 +143,22 @@ const ColorGuess = () => {
 	const [cooldown, setCooldown] = useState(false);
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
+	const [scoreMessage, setScoreMessage] = useState("");
+	const timeoutsRef = useRef([]);
+
+	const trackTimeout = (cb, delay) => {
+		const id = setTimeout(cb, delay);
+		timeoutsRef.current.push(id);
+		return id;
+	};
+
+	// Clear any pending timeouts on unmount.
+	useEffect(() => {
+		return () => {
+			timeoutsRef.current.forEach((t) => clearTimeout(t));
+			timeoutsRef.current = [];
+		};
+	}, []);
 
 	useEffect(() => {
 		if (gameOver && !scorePosted) {
@@ -152,13 +168,18 @@ const ColorGuess = () => {
 	}, [gameOver]);
 
 	const handleSubmitScore = async () => {
-		await createScorePost({
+		const result = await createScorePost({
 			value: score,
 			text: `Score: ${score}`,
 			owner: cookies.user_id,
 			game: "colorguess",
 		});
 		setScorePosted(true);
+		setScoreMessage(
+			result && result.success
+				? "Score posted!"
+				: "Could not post score. Please try again.",
+		);
 	};
 
 	useEffect(() => {
@@ -180,14 +201,14 @@ const ColorGuess = () => {
 	const handleGuess = (idx) => {
 		if (gameOver || win || selected.includes(idx) || cooldown) return;
 		setCooldown(true);
-		setTimeout(() => setCooldown(false), 700);
+		trackTimeout(() => setCooldown(false), 700);
 		if (options[idx].name === target.name) {
 			setScore((s) => s + 1);
 			if (round === MAX_ROUNDS) {
 				setWin(true);
 				setGameOver(true);
 			} else {
-				setTimeout(() => setRound((r) => r + 1), 600);
+				trackTimeout(() => setRound((r) => r + 1), 600);
 			}
 		} else {
 			setMistakes((m) => m + 1);
@@ -202,12 +223,14 @@ const ColorGuess = () => {
 		setGameOver(false);
 		setWin(false);
 		setSelected([]);
+		setScorePosted(false);
+		setScoreMessage("");
 	};
 
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen flex flex-col items-center justify-center bg-background py-16 px-4">
+			<div className="min-h-[640px] flex flex-col items-center justify-center bg-background py-16 px-4">
 				<div className="max-w-md w-full bg-background border border-border-subtle p-9 flex flex-col items-center">
 					<h1 className="text-3xl font-serif text-ink mb-4">Color Guess</h1>
 					<p className="mb-3 text-text-secondary text-center">
@@ -268,6 +291,11 @@ const ColorGuess = () => {
 							<div className="mb-4 font-mono text-text-secondary">
 								Total Mistakes: {mistakes}
 							</div>
+							{scoreMessage && (
+								<div className="text-[15px] font-semibold text-text-secondary mb-4">
+									{scoreMessage}
+								</div>
+							)}
 							<button
 								onClick={handleRestart}
 								className="bg-primary text-background px-6 py-3 font-semibold text-[15px] border border-primary hover:bg-primary-hover active:bg-primary-active"

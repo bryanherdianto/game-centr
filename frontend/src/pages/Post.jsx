@@ -29,7 +29,7 @@ export default function Post() {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen bg-background py-16 px-4 sm:px-6 lg:px-8">
+			<div className="min-h-[640px] bg-background py-16 px-4 sm:px-6 lg:px-8">
 				<div className="max-w-[680px] mx-auto">
 					<h1 className="text-4xl font-serif text-center text-ink mb-12">
 						Scores
@@ -47,8 +47,8 @@ export default function Post() {
 								</p>
 							</div>
 						) : (
-							scores.map((score, index) => (
-								<div key={index} className="transition-colors duration-300">
+							scores.map((score) => (
+								<div key={score._id} className="transition-colors duration-300">
 									<ScoreCard
 										score_id={score._id}
 										username={score.owner.username}

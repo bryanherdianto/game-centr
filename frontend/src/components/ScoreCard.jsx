@@ -12,19 +12,34 @@ export default function ScoreCard({
 	game,
 }) {
 	const [commentText, setCommentText] = useState("");
-	const [cookies] = useCookies(["user_id"]);
+	const [localComments, setLocalComments] = useState(comments || []);
+	const [cookies] = useCookies(["user_id", "username"]);
 
 	const postComment = () => {
-		console.log(score_id);
+		const text = commentText.trim();
+		if (!text) return;
+
 		addComment({
 			game,
 			scoreId: score_id,
 			author: cookies.user_id,
-			text: commentText,
+			text,
 		})
 			.then((response) => {
 				if (response.data != null) {
-					window.location.reload();
+					// Use the created comment if it has a populated author,
+					// otherwise build it from the current user + input text.
+					const created = response.data;
+					const newComment =
+						created && created.author && created.author.username
+							? created
+							: {
+									_id: (created && created._id) || `temp-${Date.now()}`,
+									text,
+									author: { username: cookies.username },
+								};
+					setLocalComments((prev) => [...prev, newComment]);
+					setCommentText("");
 				} else {
 					console.error("Failed to post comment");
 				}
@@ -64,14 +79,14 @@ export default function ScoreCard({
 					</div>
 				</div>
 
-				{comments && comments.length > 0 && (
+				{localComments && localComments.length > 0 && (
 					<div className="mt-6 space-y-3 pt-3">
 						<h3 className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
 							Comments
 						</h3>
-						{comments.map((comment, index) => (
+						{localComments.map((comment) => (
 							<CommentCard
-								key={index}
+								key={comment._id}
 								username={comment.author.username}
 								text={comment.text}
 							/>
