@@ -227,15 +227,27 @@ const PatternRepeater = () => {
 							<div />
 						)}
 					</div>
-					<div className="flex gap-4 mb-6">
-						{ARROWS.map((a) => (
-							<div
-								key={a.key}
-								className="w-12 h-12 flex items-center justify-center border border-border-medium text-text-secondary"
-							>
-								<Arrow rotation={a.rotation} className="w-6 h-6" />
-							</div>
-						))}
+					{/* D-pad: Up on top row (centre), Left/Down/Right on bottom row */}
+					<div className="grid grid-cols-3 gap-2 mb-6">
+						{[null, ARROWS[0], null, ARROWS[3], ARROWS[2], ARROWS[1]].map(
+							(a, i) =>
+								a === null ? (
+									<div key={i} />
+								) : (
+									<button
+										key={a.key}
+										disabled={showing || gameOver || win}
+										onClick={() => setUserInput((u) => [...u, a.key])}
+										className={`w-12 h-12 flex items-center justify-center border border-border-medium ${
+											showing || gameOver || win
+												? "text-text-secondary opacity-40 cursor-not-allowed"
+												: "text-ink hover:bg-surface-raised active:bg-ink active:text-background cursor-pointer"
+										}`}
+									>
+										<Arrow rotation={a.rotation} className="w-6 h-6" />
+									</button>
+								),
+						)}
 					</div>
 					{gameOver || win ? (
 						<>
@@ -261,7 +273,9 @@ const PatternRepeater = () => {
 						</>
 					) : (
 						<div className="text-text-secondary font-semibold mb-2 h-6">
-							{showing ? "Watch the pattern..." : "Your turn! Use arrow keys."}
+							{showing
+								? "Watch the pattern..."
+								: "Your turn! Use arrow keys or tap."}
 						</div>
 					)}
 				</div>

@@ -34,7 +34,8 @@ func main() {
 		AllowOrigins: []string{
 			"http://localhost:5173",
 			"http://localhost:3000",
-			"https://sbd-numbrhunt.jpmd53.easypanel.host",
+			"https://game-centr.vercel.app",
+			"https://game-centr.bryanherdianto.site",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},

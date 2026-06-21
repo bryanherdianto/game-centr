@@ -24,6 +24,13 @@ const PongGame = () => {
 	const leftPaddleRef = useRef(150);
 	const rightPaddleRef = useRef(150);
 	const [bounces, setBounces] = useState(0);
+	// Responsive scaling: the game canvas stays 600×400 internally; a CSS
+	// transform scales it down to fit narrower viewports (e.g. mobile).
+	const [scale, setScale] = useState(1);
+	const wrapperRef = useRef(null);
+	const containerRef = useRef(null);
+	// Maps each active touch identifier → which paddle side it controls.
+	const touchSideRef = useRef({});
 	const [cookies] = useCookies(["user_id"]);
 	const [scorePosted, setScorePosted] = useState(false);
 	const [scoreMessage, setScoreMessage] = useState("");
@@ -195,6 +202,72 @@ const PongGame = () => {
 		}
 	}, [gameOver]);
 
+	// Scale the 600×400 canvas to fit the wrapper width on small screens.
+	useEffect(() => {
+		const el = wrapperRef.current;
+		if (!el) return;
+		const ro = new ResizeObserver(([entry]) => {
+			setScale(Math.min(1, entry.contentRect.width / 600));
+		});
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, []);
+
+	// Touch drag controls: left half of canvas → left paddle, right half → right paddle.
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+
+		const updatePaddleFromTouch = (touch, rect, side) => {
+			const relY = (touch.clientY - rect.top) / scale;
+			const paddleY = Math.max(0, Math.min(300, relY - 50));
+			if (side === "left") {
+				leftPaddleRef.current = paddleY;
+				setLeftPaddle(paddleY);
+			} else {
+				rightPaddleRef.current = paddleY;
+				setRightPaddle(paddleY);
+			}
+		};
+
+		const handleTouchStart = (e) => {
+			if (!gameRunning) return;
+			const rect = el.getBoundingClientRect();
+			Array.from(e.changedTouches).forEach((t) => {
+				const side = (t.clientX - rect.left) / scale < 300 ? "left" : "right";
+				touchSideRef.current[t.identifier] = side;
+				updatePaddleFromTouch(t, rect, side);
+			});
+			e.preventDefault();
+		};
+
+		const handleTouchMove = (e) => {
+			if (!gameRunning) return;
+			const rect = el.getBoundingClientRect();
+			Array.from(e.changedTouches).forEach((t) => {
+				const side = touchSideRef.current[t.identifier];
+				if (side) updatePaddleFromTouch(t, rect, side);
+			});
+			e.preventDefault();
+		};
+
+		const handleTouchEnd = (e) => {
+			Array.from(e.changedTouches).forEach((t) => {
+				delete touchSideRef.current[t.identifier];
+			});
+		};
+
+		el.addEventListener("touchstart", handleTouchStart, { passive: false });
+		el.addEventListener("touchmove", handleTouchMove, { passive: false });
+		el.addEventListener("touchend", handleTouchEnd);
+
+		return () => {
+			el.removeEventListener("touchstart", handleTouchStart);
+			el.removeEventListener("touchmove", handleTouchMove);
+			el.removeEventListener("touchend", handleTouchEnd);
+		};
+	}, [gameRunning, scale]);
+
 	const startGame = () => {
 		setGameRunning(true);
 	};
@@ -221,32 +294,46 @@ const PongGame = () => {
 			<div className="min-h-[640px] bg-background flex flex-col items-center py-16 px-4">
 				<h1 className="text-3xl font-serif text-ink mb-3">Pong</h1>
 				<p className="text-text-secondary text-center max-w-md mb-2">
-					Left paddle: Click "W" to move up and "S" to move down. Right paddle:
-					Click "Up Arrow" to move up and "Down Arrow" to move down. Keep the
-					ball in play!
+					Left paddle: W / S keys or touch left side. Right paddle: ↑ / ↓ keys
+					or touch right side. Keep the ball in play!
 				</p>
 				<div className="controls">
 					<button onClick={startGame}>Start</button>
 					<button onClick={restartGame}>Restart</button>
 					<button onClick={pauseGame}>Pause</button>
 				</div>
-				<div className="ping-pong-container" tabIndex="0">
+				{/* Sizing wrapper reserves the scaled height so the page doesn't collapse */}
+				<div
+					ref={wrapperRef}
+					className="w-full max-w-[600px]"
+					style={{ height: `${400 * scale}px` }}
+				>
 					<div
-						className={`paddle paddle-left ${gameRunning ? "" : "paused"}`}
-						id="paddle-left"
-						style={{ top: `${leftPaddle}px` }}
-					/>
-					<div
-						className={`paddle paddle-right ${gameRunning ? "" : "paused"}`}
-						id="paddle-right"
-						style={{ top: `${rightPaddle}px` }}
-					/>
-					<div
-						className={`ball ${gameRunning ? "" : "paused"}`}
-						ref={ballRef}
-						style={{ top: `${ball.y}px`, left: `${ball.x}px` }}
-					/>
-					{gameOver && <div className="game-over">Game Over</div>}
+						ref={containerRef}
+						className="ping-pong-container"
+						tabIndex="0"
+						style={{
+							transform: `scale(${scale})`,
+							transformOrigin: "top left",
+						}}
+					>
+						<div
+							className={`paddle paddle-left ${gameRunning ? "" : "paused"}`}
+							id="paddle-left"
+							style={{ top: `${leftPaddle}px` }}
+						/>
+						<div
+							className={`paddle paddle-right ${gameRunning ? "" : "paused"}`}
+							id="paddle-right"
+							style={{ top: `${rightPaddle}px` }}
+						/>
+						<div
+							className={`ball ${gameRunning ? "" : "paused"}`}
+							ref={ballRef}
+							style={{ top: `${ball.y}px`, left: `${ball.x}px` }}
+						/>
+						{gameOver && <div className="game-over">Game Over</div>}
+					</div>
 				</div>
 				{gameOver && scoreMessage && (
 					<div className="mt-4 text-[15px] font-semibold text-text-secondary">
