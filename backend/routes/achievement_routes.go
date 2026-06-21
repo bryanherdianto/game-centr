@@ -2,6 +2,7 @@ package routes
 
 import (
 	"netgames-go-server/controllers"
+	"netgames-go-server/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,6 +10,7 @@ import (
 // SetupAchievementRoutes sets up the routes for achievements
 func SetupAchievementRoutes(router *gin.Engine) {
 	achievementRoutes := router.Group("/achievement")
+	achievementRoutes.Use(middleware.AuthRequired())
 	{
 		// Get all achievements
 		achievementRoutes.GET("", controllers.GetAllAchievements)

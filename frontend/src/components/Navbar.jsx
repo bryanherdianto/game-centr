@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 
 export default function Navbar() {
 	const [cookies, , removeCookie] = useCookies([
+		"token",
 		"user_id",
 		"username",
 		"isLoggedIn",
@@ -11,6 +12,7 @@ export default function Navbar() {
 
 	const handleLogout = () => {
 		const cookieOptions = { path: "/" };
+		removeCookie("token", cookieOptions);
 		removeCookie("user_id", cookieOptions);
 		removeCookie("username", cookieOptions);
 		removeCookie("isLoggedIn", cookieOptions);

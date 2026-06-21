@@ -2,6 +2,7 @@ package routes
 
 import (
 	"netgames-go-server/controllers"
+	"netgames-go-server/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,6 +10,7 @@ import (
 // SetupScoreRoutes configures all routes related to scores
 func SetupScoreRoutes(router *gin.Engine) {
 	scoreGroup := router.Group("/score")
+	scoreGroup.Use(middleware.AuthRequired())
 	{
 		// Get all scores
 		scoreGroup.GET("", controllers.GetAllGameScores)

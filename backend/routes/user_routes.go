@@ -14,25 +14,26 @@ func SetupUserRoutes(router *gin.Engine) {
 	// Strict per-IP rate limit for auth endpoints (login + register).
 	authLimiter := middleware.RateLimit(10, time.Minute)
 
+	// Require a valid JWT for everything except login/register.
+	auth := middleware.AuthRequired()
+
 	userGroup := router.Group("/user")
 	{
-		// Get all users
-		userGroup.GET("", controllers.GetAllUsers)
-
-		// User login (rate limited)
+		// Login and register are public (rate limited).
 		userGroup.POST("/login", authLimiter, controllers.Login)
+		userGroup.POST("/addUser", authLimiter, controllers.AddUser)
+
+		// Get all users
+		userGroup.GET("", auth, controllers.GetAllUsers)
 
 		// Get user by ID
-		userGroup.GET("/:userId", controllers.GetUserById)
+		userGroup.GET("/:userId", auth, controllers.GetUserById)
 
 		// Get user scores
-		userGroup.GET("/getUserScores/:userId", controllers.GetUserScores)
+		userGroup.GET("/getUserScores/:userId", auth, controllers.GetUserScores)
 
 		// Get user game stats (consolidated here from SetupGameScoreRoutes so all
 		// /user routes are registered in a single place / tree)
-		userGroup.GET("/:userId/stats", controllers.GetUserGameStats)
-
-		// Add user (register) (rate limited)
-		userGroup.POST("/addUser", authLimiter, controllers.AddUser)
+		userGroup.GET("/:userId/stats", auth, controllers.GetUserGameStats)
 	}
 }

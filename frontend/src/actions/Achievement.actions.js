@@ -1,5 +1,4 @@
-import axios from "axios";
-import { backend_URI } from "./config";
+import { api, backend_URI } from "./config";
 
 /**
  * Get all achievements
@@ -10,7 +9,7 @@ import { backend_URI } from "./config";
 
 export const getAllAchievements = async (gameCode = "", showHidden = false) => {
 	try {
-		const response = await axios.get(`${backend_URI}/achievement`, {
+		const response = await api.get(`${backend_URI}/achievement`, {
 			params: {
 				gameCode,
 				showHidden,
@@ -36,7 +35,7 @@ export const getUserAchievements = async (
 	showHidden = false,
 ) => {
 	try {
-		const response = await axios.get(
+		const response = await api.get(
 			`${backend_URI}/achievement/user/${userId}`,
 			{
 				params: {
@@ -61,7 +60,7 @@ export const getUserAchievements = async (
  */
 export const awardAchievement = async (userId, gameCode, achievementCode) => {
 	try {
-		const response = await axios.post(`${backend_URI}/achievement/award`, {
+		const response = await api.post(`${backend_URI}/achievement/award`, {
 			userId,
 			gameCode,
 			achievementCode,
@@ -82,12 +81,14 @@ export const awardAchievement = async (userId, gameCode, achievementCode) => {
  */
 export const checkAchievementProgress = async (userId, gameCode, progress) => {
 	try {
-		const response = await axios.post(
+		const response = await api.post(
 			`${backend_URI}/achievement/check-progress`,
 			{
 				userId,
 				gameCode,
-				progress,
+				// localHour lets the backend evaluate time-based achievements
+				// (e.g. night_owl) against the player's clock, not the server's.
+				progress: { ...progress, localHour: new Date().getHours() },
 			},
 		);
 		return response.data;

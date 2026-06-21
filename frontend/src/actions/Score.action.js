@@ -1,5 +1,4 @@
-import axios from "axios";
-import { backend_URI } from "./config";
+import { api, backend_URI } from "./config";
 
 const baseApiResponse = (data, isSuccess) => {
 	return {
@@ -11,7 +10,7 @@ const baseApiResponse = (data, isSuccess) => {
 // post score
 export const createScorePost = async (input) => {
 	try {
-		const response = await axios.post(
+		const response = await api.post(
 			`${backend_URI}/game/${input.game}/score`,
 			input,
 		);
@@ -26,7 +25,7 @@ export const createScorePost = async (input) => {
 // get all scores
 export const getAllScores = async () => {
 	try {
-		const response = await axios.get(`${backend_URI}/score`);
+		const response = await api.get(`${backend_URI}/score`);
 
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
@@ -38,7 +37,7 @@ export const getAllScores = async () => {
 // get all scores for a game
 export const getScoresByGame = async (game) => {
 	try {
-		const response = await axios.get(`${backend_URI}/game/${game}/score`);
+		const response = await api.get(`${backend_URI}/game/${game}/score`);
 
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
@@ -51,7 +50,7 @@ export const getScoresByGame = async (game) => {
 export const addComment = async (input) => {
 	try {
 		const { game, scoreId, author, text } = input;
-		const response = await axios.post(
+		const response = await api.post(
 			`${backend_URI}/game/${game}/score/${scoreId}/comment`,
 			{ author, text },
 		);
@@ -67,7 +66,7 @@ export const addComment = async (input) => {
 export const getGlobalLeaderboard = async (options = {}) => {
 	try {
 		const { limit = 10 } = options;
-		const response = await axios.get(
+		const response = await api.get(
 			`${backend_URI}/game/leaderboard?limit=${limit}`,
 		);
 
@@ -82,7 +81,7 @@ export const getGlobalLeaderboard = async (options = {}) => {
 export const getGameLeaderboard = async (gameCode, options = {}) => {
 	try {
 		const { timeFrame = "all", limit = 10 } = options;
-		const response = await axios.get(
+		const response = await api.get(
 			`${backend_URI}/game/${gameCode}/leaderboard?timeFrame=${timeFrame}&limit=${limit}`,
 		);
 
@@ -101,7 +100,7 @@ export const getGameLeaderboard = async (gameCode, options = {}) => {
 // get all game types
 export const getAllGameTypes = async () => {
 	try {
-		const response = await axios.get(`${backend_URI}/game-types`);
+		const response = await api.get(`${backend_URI}/game-types`);
 
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
@@ -113,7 +112,7 @@ export const getAllGameTypes = async () => {
 // get game type by code
 export const getGameTypeByCode = async (gameCode) => {
 	try {
-		const response = await axios.get(`${backend_URI}/game-types/${gameCode}`);
+		const response = await api.get(`${backend_URI}/game-types/${gameCode}`);
 
 		return baseApiResponse(response.data.data, true);
 	} catch (error) {
@@ -125,7 +124,7 @@ export const getGameTypeByCode = async (gameCode) => {
 // get user game stats
 export const getUserGameStats = async (userId) => {
 	try {
-		const response = await axios.get(`${backend_URI}/user/${userId}/stats`);
+		const response = await api.get(`${backend_URI}/user/${userId}/stats`);
 
 		return {
 			success: true,

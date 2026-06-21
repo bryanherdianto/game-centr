@@ -1,5 +1,4 @@
-import axios from "axios";
-import { backend_URI } from "./config";
+import { api, backend_URI } from "./config";
 
 const baseApiResponse = (data, isSuccess) => {
 	return {
@@ -11,9 +10,13 @@ const baseApiResponse = (data, isSuccess) => {
 // login
 export const loginUser = async (input) => {
 	try {
-		const response = await axios.post(`${backend_URI}/user/login`, input);
+		const response = await api.post(`${backend_URI}/user/login`, input);
 
-		return baseApiResponse(response.data.data, true);
+		return {
+			success: true,
+			data: response.data.data,
+			token: response.data.token,
+		};
 	} catch (error) {
 		console.error(error);
 		return baseApiResponse(null, false);
@@ -23,9 +26,13 @@ export const loginUser = async (input) => {
 // sign up
 export const signUpUser = async (input) => {
 	try {
-		const response = await axios.post(`${backend_URI}/user/addUser`, input);
+		const response = await api.post(`${backend_URI}/user/addUser`, input);
 
-		return baseApiResponse(response.data.data, true);
+		return {
+			success: true,
+			data: response.data.data,
+			token: response.data.token,
+		};
 	} catch (error) {
 		console.error(error);
 		return baseApiResponse(null, false);

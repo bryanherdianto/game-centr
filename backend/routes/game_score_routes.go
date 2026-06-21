@@ -2,13 +2,17 @@ package routes
 
 import (
 	"netgames-go-server/controllers"
+	"netgames-go-server/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupGameScoreRoutes(router *gin.Engine) {
+	auth := middleware.AuthRequired()
+
 	// Game types routes
 	gameTypesGroup := router.Group("/game-types")
+	gameTypesGroup.Use(auth)
 	{
 		gameTypesGroup.GET("", controllers.GetAllGameTypes)
 		gameTypesGroup.GET("/:gameCode", controllers.GetGameTypeByCode)
@@ -16,6 +20,7 @@ func SetupGameScoreRoutes(router *gin.Engine) {
 
 	// Game scores routes
 	gameGroup := router.Group("/game")
+	gameGroup.Use(auth)
 	{
 		// Global leaderboard
 		gameGroup.GET("/leaderboard", controllers.GetGlobalLeaderboard)

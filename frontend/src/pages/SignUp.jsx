@@ -6,7 +6,13 @@ import { signUpUser } from "../actions/User.actions";
 
 export default function SignUp() {
 	const navigate = useNavigate();
-	const [cookies] = useCookies(["isLoggedIn"]);
+	const [cookies, setCookies] = useCookies([
+		"token",
+		"user_id",
+		"username",
+		"isLoggedIn",
+		"score",
+	]);
 
 	useEffect(() => {
 		if (cookies.isLoggedIn) {
@@ -31,10 +37,22 @@ export default function SignUp() {
 		event.preventDefault();
 		setError("");
 
+		const cookieOptions = {
+			path: "/",
+			sameSite: "strict",
+			secure: window.location.protocol === "https:",
+		};
+
 		signUpUser(formData)
 			.then((response) => {
 				if (response.data != null) {
-					navigate("/login");
+					// Registration also logs the user in (the API returns a token).
+					setCookies("token", response.token, cookieOptions);
+					setCookies("user_id", response.data._id, cookieOptions);
+					setCookies("username", response.data.username, cookieOptions);
+					setCookies("isLoggedIn", true, cookieOptions);
+					setCookies("score", 0, cookieOptions);
+					navigate("/game");
 				} else {
 					setError("Could not create account. Please try again.");
 				}

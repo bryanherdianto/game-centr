@@ -8,6 +8,7 @@ export default function Login() {
 	const navigate = useNavigate();
 
 	const [cookies, setCookies] = useCookies([
+		"token",
 		"user_id",
 		"username",
 		"isLoggedIn",
@@ -45,6 +46,7 @@ export default function Login() {
 		loginUser(formData)
 			.then((response) => {
 				if (response.data) {
+					setCookies("token", response.token, cookieOptions);
 					setCookies("user_id", response.data._id, cookieOptions);
 					setCookies("username", response.data.username, cookieOptions);
 					setCookies("isLoggedIn", true, cookieOptions);

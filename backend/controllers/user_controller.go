@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"netgames-go-server/db"
+	"netgames-go-server/middleware"
 	"netgames-go-server/models"
 	"time"
 
@@ -78,10 +79,22 @@ func AddUser(c *gin.Context) {
 	}
 	user.ID = id
 
+	// Issue a JWT so registration also logs the user in.
+	token, err := middleware.GenerateToken(user.ID.Hex(), user.Username)
+	if err != nil {
+		log.Printf("Error generating token after registration: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Successfully Registered User",
 		"data":    user.ToResponse(),
+		"token":   token,
 	})
 }
 
@@ -133,10 +146,22 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// Issue a signed JWT for the authenticated session.
+	token, err := middleware.GenerateToken(user.ID.Hex(), user.Username)
+	if err != nil {
+		log.Printf("Error generating token during login: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Found user",
 		"data":    user.ToResponse(),
+		"token":   token,
 	})
 }
 

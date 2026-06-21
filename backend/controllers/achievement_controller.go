@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"netgames-go-server/db"
+	"netgames-go-server/middleware"
 	"netgames-go-server/models"
 	"time"
 
@@ -261,7 +262,6 @@ func GetUserAchievements(c *gin.Context) {
 func AwardAchievement(c *gin.Context) {
 	// Parse request body
 	var input struct {
-		UserID          string `json:"userId" binding:"required"`
 		GameCode        string `json:"gameCode" binding:"required"`
 		AchievementCode string `json:"achievementCode" binding:"required"`
 	}
@@ -271,16 +271,16 @@ func AwardAchievement(c *gin.Context) {
 		return
 	}
 
-	// Convert user ID to ObjectID
-	userID, err := primitive.ObjectIDFromHex(input.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+	// The user is the authenticated caller, NOT a value from the request body.
+	userID, ok := middleware.AuthUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized"})
 		return
 	}
 
 	// Find the achievement
 	var achievement models.Achievement
-	err = db.AchievementColl.FindOne(
+	err := db.AchievementColl.FindOne(
 		context.Background(),
 		bson.M{"game_code": input.GameCode, "code": input.AchievementCode},
 	).Decode(&achievement)
@@ -383,7 +383,6 @@ func AwardAchievement(c *gin.Context) {
 func CheckAchievementProgress(c *gin.Context) {
 	// Parse request body
 	var input struct {
-		UserID   string                 `json:"userId" binding:"required"`
 		GameCode string                 `json:"gameCode" binding:"required"`
 		Progress map[string]interface{} `json:"progress" binding:"required"`
 	}
@@ -393,10 +392,10 @@ func CheckAchievementProgress(c *gin.Context) {
 		return
 	}
 
-	// Convert user ID to ObjectID
-	userID, err := primitive.ObjectIDFromHex(input.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+	// The user is the authenticated caller, NOT a value from the request body.
+	userID, ok := middleware.AuthUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized"})
 		return
 	}
 

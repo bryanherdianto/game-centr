@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"netgames-go-server/db"
+	"netgames-go-server/middleware"
 	"netgames-go-server/models"
 	"time"
 
@@ -225,8 +226,18 @@ func PostScore(c *gin.Context) {
 	// Get game code from URL parameter if available
 	gameCode := c.Param("gameCode")
 
+	// The score owner is the authenticated user, NOT a value from the request
+	// body — this prevents posting scores on behalf of another user.
+	owner, ok := middleware.AuthUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "Unauthorized",
+		})
+		return
+	}
+
 	var scoreRequest struct {
-		Owner    primitive.ObjectID     `json:"owner" binding:"required"`
 		Game     string                 `json:"game"`
 		Value    int                    `json:"value"`
 		Text     string                 `json:"text" binding:"max=280"`
@@ -280,7 +291,7 @@ func PostScore(c *gin.Context) {
 
 	// Check if user exists
 	var user models.User
-	err := db.UserColl.FindOne(ctx, bson.M{"_id": scoreRequest.Owner}).Decode(&user)
+	err := db.UserColl.FindOne(ctx, bson.M{"_id": owner}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -327,7 +338,7 @@ func PostScore(c *gin.Context) {
 	// Create score
 	now := time.Now()
 	score := models.Score{
-		Owner:     scoreRequest.Owner,
+		Owner:     owner,
 		Game:      game,
 		Value:     scoreRequest.Value,
 		Text:      scoreRequest.Text,
@@ -365,7 +376,7 @@ func PostScore(c *gin.Context) {
 
 		_, err = db.UserColl.UpdateOne(
 			sessCtx,
-			bson.M{"_id": scoreRequest.Owner},
+			bson.M{"_id": owner},
 			bson.M{"$push": bson.M{"scores": id}, "$set": bson.M{"updatedAt": now}},
 		)
 		if err != nil {
@@ -404,9 +415,18 @@ func AddCommentToScore(c *gin.Context) {
 		return
 	}
 
+	// The comment author is the authenticated user, NOT a value from the body.
+	author, ok := middleware.AuthUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "Unauthorized",
+		})
+		return
+	}
+
 	var commentRequest struct {
-		Author primitive.ObjectID `json:"author" binding:"required"`
-		Text   string             `json:"text" binding:"required,max=500"`
+		Text string `json:"text" binding:"required,max=500"`
 	}
 
 	if err := c.ShouldBindJSON(&commentRequest); err != nil {
@@ -428,7 +448,7 @@ func AddCommentToScore(c *gin.Context) {
 
 	// Check if user exists
 	var user models.User
-	err = db.UserColl.FindOne(ctx, bson.M{"_id": commentRequest.Author}).Decode(&user)
+	err = db.UserColl.FindOne(ctx, bson.M{"_id": author}).Decode(&user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -459,7 +479,7 @@ func AddCommentToScore(c *gin.Context) {
 	now := time.Now()
 	comment := models.Comment{
 		Score:     objectId,
-		Author:    commentRequest.Author,
+		Author:    author,
 		Text:      commentRequest.Text,
 		CreatedAt: now,
 		UpdatedAt: now,
