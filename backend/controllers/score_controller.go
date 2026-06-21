@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"netgames-go-server/db"
@@ -31,8 +32,11 @@ func GetAllScores(c *gin.Context) {
 	}
 
 	// Set options to sort by updatedAt in descending order (-1)
+	limit, skip := parsePagination(c)
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "updatedAt", Value: -1}})
+	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip)
 
 	cursor, err := db.ScoreColl.Find(ctx, filter, findOptions)
 	if err != nil {
@@ -55,53 +59,15 @@ func GetAllScores(c *gin.Context) {
 		return
 	}
 
-	var scoresWithDetails []models.ScoreWithUserDetails
-	for _, score := range scores {
-		// Populate owner
-		var owner models.User
-		err := db.UserColl.FindOne(ctx, bson.M{"_id": score.Owner}).Decode(&owner)
-		if err != nil {
-			continue // Skip if owner not found
-		}
-
-		// Populate comments
-		var commentsWithDetails []models.CommentWithUserDetails
-		if len(score.Comments) > 0 {
-			commentsCursor, err := db.CommentColl.Find(ctx, bson.M{"_id": bson.M{"$in": score.Comments}})
-			if err == nil {
-				var comments []models.Comment
-				if err := commentsCursor.All(ctx, &comments); err == nil {
-					commentsCursor.Close(ctx)
-
-					for _, comment := range comments {
-						var commentAuthor models.User
-						err := db.UserColl.FindOne(ctx, bson.M{"_id": comment.Author}).Decode(&commentAuthor)
-						if err == nil {
-							commentsWithDetails = append(commentsWithDetails, models.CommentWithUserDetails{
-								ID:        comment.ID,
-								Score:     comment.Score,
-								Author:    commentAuthor.ToResponse(),
-								Text:      comment.Text,
-								CreatedAt: comment.CreatedAt,
-								UpdatedAt: comment.UpdatedAt,
-							})
-						}
-					}
-				}
-			}
-		}
-
-		scoresWithDetails = append(scoresWithDetails, models.ScoreWithUserDetails{
-			ID:        score.ID,
-			Owner:     owner.ToResponse(),
-			Game:      score.Game,
-			Value:     score.Value,
-			Text:      score.Text,
-			Metadata:  score.Metadata,
-			Comments:  commentsWithDetails,
-			CreatedAt: score.CreatedAt,
-			UpdatedAt: score.UpdatedAt,
+	// Batch-populate owners and comments to avoid N+1 lookups
+	scoresWithDetails, err := populateScores(ctx, scores)
+	if err != nil {
+		log.Printf("Error populating scores: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -116,8 +82,11 @@ func GetAllGameScores(c *gin.Context) {
 	defer cancel()
 
 	// Set options to sort by updatedAt in descending order (-1)
+	limit, skip := parsePagination(c)
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "updatedAt", Value: -1}})
+	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip)
 
 	cursor, err := db.ScoreColl.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
@@ -140,52 +109,15 @@ func GetAllGameScores(c *gin.Context) {
 		return
 	}
 
-	var scoresWithDetails []models.ScoreWithUserDetails
-	for _, score := range scores {
-		// Populate owner
-		var owner models.User
-		err := db.UserColl.FindOne(ctx, bson.M{"_id": score.Owner}).Decode(&owner)
-		if err != nil {
-			continue // Skip if owner not found
-		}
-
-		// Populate comments
-		var commentsWithDetails []models.CommentWithUserDetails
-		if len(score.Comments) > 0 {
-			commentsCursor, err := db.CommentColl.Find(ctx, bson.M{"_id": bson.M{"$in": score.Comments}})
-			if err == nil {
-				var comments []models.Comment
-				if err := commentsCursor.All(ctx, &comments); err == nil {
-					commentsCursor.Close(ctx)
-
-					for _, comment := range comments {
-						var commentAuthor models.User
-						err := db.UserColl.FindOne(ctx, bson.M{"_id": comment.Author}).Decode(&commentAuthor)
-						if err == nil {
-							commentsWithDetails = append(commentsWithDetails, models.CommentWithUserDetails{
-								ID:        comment.ID,
-								Score:     comment.Score,
-								Author:    commentAuthor.ToResponse(),
-								Text:      comment.Text,
-								CreatedAt: comment.CreatedAt,
-								UpdatedAt: comment.UpdatedAt,
-							})
-						}
-					}
-				}
-			}
-		}
-
-		scoresWithDetails = append(scoresWithDetails, models.ScoreWithUserDetails{
-			ID:        score.ID,
-			Owner:     owner.ToResponse(),
-			Game:      score.Game,
-			Value:     score.Value,
-			Text:      score.Text,
-			Comments:  commentsWithDetails,
-			CreatedAt: score.CreatedAt,
-			UpdatedAt: score.UpdatedAt,
+	// Batch-populate owners and comments to avoid N+1 lookups
+	scoresWithDetails, err := populateScores(ctx, scores)
+	if err != nil {
+		log.Printf("Error populating game scores: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -297,7 +229,7 @@ func PostScore(c *gin.Context) {
 		Owner    primitive.ObjectID     `json:"owner" binding:"required"`
 		Game     string                 `json:"game"`
 		Value    int                    `json:"value"`
-		Text     string                 `json:"text"`
+		Text     string                 `json:"text" binding:"max=280"`
 		Metadata map[string]interface{} `json:"metadata,omitempty"`
 	}
 
@@ -316,6 +248,34 @@ func PostScore(c *gin.Context) {
 			"message": "Score value cannot be negative",
 		})
 		return
+	}
+
+	// Enforce score text length limit (defensive even if binding is bypassed)
+	if len(scoreRequest.Text) > maxScoreTextLen {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Score text is too long",
+		})
+		return
+	}
+
+	// Cap the metadata payload size to avoid storing oversized blobs
+	if scoreRequest.Metadata != nil {
+		metaBytes, err := bson.Marshal(scoreRequest.Metadata)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Invalid metadata",
+			})
+			return
+		}
+		if len(metaBytes) > maxMetadataBytes {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Metadata is too large",
+			})
+			return
+		}
 	}
 
 	// Check if user exists
@@ -352,6 +312,18 @@ func PostScore(c *gin.Context) {
 		return
 	}
 
+	// Server-side sanity bound: if the game defines a positive max score,
+	// reject values above it. (Not a substitute for auth.)
+	var gameType models.GameType
+	gtErr := db.GameTypeColl.FindOne(ctx, bson.M{"game_code": game}).Decode(&gameType)
+	if gtErr == nil && gameType.MaxScore != nil && *gameType.MaxScore > 0 && scoreRequest.Value > *gameType.MaxScore {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Score value exceeds the maximum allowed for this game",
+		})
+		return
+	}
+
 	// Create score
 	now := time.Now()
 	score := models.Score{
@@ -365,10 +337,44 @@ func PostScore(c *gin.Context) {
 		UpdatedAt: now,
 	}
 
-	// Insert score into database
-	result, err := db.ScoreColl.InsertOne(ctx, score)
+	// Atomically insert the score and push its id onto the user's scores array.
+	// A MongoDB transaction ensures a partial failure cannot orphan the score.
+	session, err := db.Client.StartSession()
 	if err != nil {
-		log.Printf("Error inserting score: %v", err)
+		log.Printf("Error starting session for score write: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+	defer session.EndSession(ctx)
+
+	var insertedID primitive.ObjectID
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		result, err := db.ScoreColl.InsertOne(sessCtx, score)
+		if err != nil {
+			return nil, err
+		}
+
+		id, ok := result.InsertedID.(primitive.ObjectID)
+		if !ok {
+			return nil, fmt.Errorf("unexpected InsertedID type for score: %T", result.InsertedID)
+		}
+		insertedID = id
+
+		_, err = db.UserColl.UpdateOne(
+			sessCtx,
+			bson.M{"_id": scoreRequest.Owner},
+			bson.M{"$push": bson.M{"scores": id}, "$set": bson.M{"updatedAt": now}},
+		)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	if err != nil {
+		log.Printf("Error writing score transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Internal server error",
@@ -376,35 +382,7 @@ func PostScore(c *gin.Context) {
 		return
 	}
 
-	// Get the inserted score with ID
-	id, ok := result.InsertedID.(primitive.ObjectID)
-	if !ok {
-		log.Printf("Error: unexpected InsertedID type for score: %T", result.InsertedID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Internal server error",
-		})
-		return
-	}
-	score.ID = id
-
-	// Add score to user scores array
-	_, err = db.UserColl.UpdateOne(
-		ctx,
-		bson.M{"_id": scoreRequest.Owner},
-		bson.M{"$push": bson.M{"scores": score.ID}, "$set": bson.M{"updatedAt": now}},
-	)
-	if err != nil {
-		// This shouldn't fail the request, but log it
-		// In production, you might want to handle this differently
-		// such as removing the score if we can't update the user
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Successfully added score but failed to update user record",
-			"data":    score,
-		})
-		return
-	}
+	score.ID = insertedID
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -428,13 +406,22 @@ func AddCommentToScore(c *gin.Context) {
 
 	var commentRequest struct {
 		Author primitive.ObjectID `json:"author" binding:"required"`
-		Text   string             `json:"text" binding:"required"`
+		Text   string             `json:"text" binding:"required,max=500"`
 	}
 
 	if err := c.ShouldBindJSON(&commentRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
+		})
+		return
+	}
+
+	// Enforce comment text length limit (defensive even if binding is bypassed)
+	if len(commentRequest.Text) > maxCommentTextLen {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Comment text is too long",
 		})
 		return
 	}

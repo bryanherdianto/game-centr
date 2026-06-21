@@ -527,6 +527,18 @@ func InitAchievements(client *mongo.Client, dbName string) error {
 		},
 	}
 
+	// Skip re-seeding if the collection is already fully populated. The unique
+	// index above is always (re)created since it is idempotent.
+	count, err := collection.CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		log.Printf("Error counting achievements: %v", err)
+		return err
+	}
+	if count >= int64(len(achievements)) {
+		log.Println("Achievements already seeded, skipping upserts")
+		return nil
+	}
+
 	// Insert achievements using upsert to avoid duplicates
 	for _, achievement := range achievements {
 		filter := bson.M{"game_code": achievement.GameCode, "code": achievement.Code}

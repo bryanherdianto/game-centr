@@ -159,13 +159,26 @@ func GetGameLeaderboard(c *gin.Context) {
 		return
 	}
 
+	// Batch-fetch owners to avoid an N+1 lookup per leaderboard entry
+	ownerIDs := make([]primitive.ObjectID, 0, len(scores))
+	for _, score := range scores {
+		ownerIDs = append(ownerIDs, score.Owner)
+	}
+	ownerMap, err := buildUserMap(ctx, ownerIDs)
+	if err != nil {
+		log.Printf("Error fetching leaderboard owners: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+
 	var leaderboardEntries []gin.H
 	rank := 0
 	for _, score := range scores {
-		// Populate owner
-		var owner models.User
-		err := db.UserColl.FindOne(ctx, bson.M{"_id": score.Owner}).Decode(&owner)
-		if err != nil {
+		owner, ok := ownerMap[score.Owner]
+		if !ok {
 			continue // Skip if owner not found
 		}
 
@@ -346,15 +359,48 @@ func GetUserGameStats(c *gin.Context) {
 		return
 	}
 
+	// Batch-fetch all game types referenced by the user's stats to avoid an
+	// N+1 lookup per game.
+	gameCodes := make([]string, 0, len(byGameResults))
+	for _, stat := range byGameResults {
+		if code, ok := stat["_id"].(string); ok {
+			gameCodes = append(gameCodes, code)
+		}
+	}
+
+	gameTypeMap := make(map[string]models.GameType)
+	if len(gameCodes) > 0 {
+		gtCursor, err := db.GameTypeColl.Find(ctx, bson.M{"game_code": bson.M{"$in": gameCodes}})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		var gameTypesList []models.GameType
+		if err := gtCursor.All(ctx, &gameTypesList); err != nil {
+			gtCursor.Close(ctx)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		gtCursor.Close(ctx)
+		for _, gt := range gameTypesList {
+			gameTypeMap[gt.GameCode] = gt
+		}
+	}
+
 	// Enhance game stats with game info
 	var gameStats []gin.H
 	for _, stat := range byGameResults {
 		gameCode := stat["_id"].(string)
 
 		// Get game type info
-		var gameType models.GameType
-		err = db.GameTypeColl.FindOne(ctx, bson.M{"game_code": gameCode}).Decode(&gameType)
-		if err != nil {
+		gameType, ok := gameTypeMap[gameCode]
+		if !ok {
 			// Skip if game type not found
 			continue
 		}
@@ -444,15 +490,30 @@ func GetGlobalLeaderboard(c *gin.Context) {
 		return
 	}
 
+	// Batch-fetch users to avoid an N+1 lookup per leaderboard entry
+	userIDs := make([]primitive.ObjectID, 0, len(results))
+	for _, result := range results {
+		if id, ok := result["_id"].(primitive.ObjectID); ok {
+			userIDs = append(userIDs, id)
+		}
+	}
+	userMap, err := buildUserMap(ctx, userIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
 	// Enhance with user details
 	var leaderboard []gin.H
 	for i, result := range results {
 		userId := result["_id"].(primitive.ObjectID)
 
 		// Get user details
-		var user models.User
-		err = db.UserColl.FindOne(ctx, bson.M{"_id": userId}).Decode(&user)
-		if err != nil {
+		user, ok := userMap[userId]
+		if !ok {
 			continue // Skip if user not found
 		}
 

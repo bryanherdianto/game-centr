@@ -32,9 +32,6 @@ func SetupGameScoreRoutes(router *gin.Engine) {
 		gameGroup.GET("/:gameCode/user/:userId/scores", controllers.GetUserGameScores)
 	}
 
-	// User stats routes
-	userStatsGroup := router.Group("/user")
-	{
-		userStatsGroup.GET("/:userId/stats", controllers.GetUserGameStats)
-	}
+	// Note: /user/:userId/stats is registered in SetupUserRoutes so all /user
+	// routes share a single registration tree.
 }

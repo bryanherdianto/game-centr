@@ -10,8 +10,8 @@ import (
 // User represents a user in the system
 type User struct {
 	ID        primitive.ObjectID   `bson:"_id,omitempty" json:"_id,omitempty"`
-	Username  string               `bson:"username" json:"username" binding:"required"`
-	Password  string               `bson:"password" json:"password" binding:"required"`
+	Username  string               `bson:"username" json:"username" binding:"required,min=3,max=30"`
+	Password  string               `bson:"password" json:"password" binding:"required,min=6,max=72"`
 	Scores    []primitive.ObjectID `bson:"scores" json:"scores"`
 	CreatedAt time.Time            `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time            `bson:"updatedAt" json:"updatedAt"`

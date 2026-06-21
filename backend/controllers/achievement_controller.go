@@ -219,16 +219,28 @@ func GetUserAchievements(c *gin.Context) {
 	}
 
 	highestScore := 0
+	gameCounts := make(map[string]int)
 	for _, s := range userScores {
 		if s.Value > highestScore {
 			highestScore = s.Value
+		}
+		gameCounts[s.Game]++
+	}
+
+	// Compute favorite game = the game_code the user has the most scores in.
+	favoriteGame := ""
+	maxCount := 0
+	for game, count := range gameCounts {
+		if count > maxCount {
+			maxCount = count
+			favoriteGame = game
 		}
 	}
 
 	stats := map[string]interface{}{
 		"totalGamesPlayed":  len(userScores),
 		"totalAchievements": len(userAchievements),
-		"favoriteGame":      "",
+		"favoriteGame":      favoriteGame,
 		"highestScore":      highestScore,
 	}
 
@@ -800,8 +812,12 @@ func checkGlobalAchievements(achievement models.Achievement, progress map[string
 	// Example implementation
 	switch achievement.Code {
 	case "night_owl":
-		// Check if current time is between 12 AM and 4 AM
+		// Prefer a client-supplied local hour (0-23) so the achievement reflects
+		// the player's local time; fall back to server time when absent.
 		currentHour := time.Now().Hour()
+		if lh, ok := progress["localHour"].(float64); ok && lh >= 0 && lh <= 23 {
+			currentHour = int(lh)
+		}
 		if currentHour >= 0 && currentHour < 4 {
 			return true
 		}

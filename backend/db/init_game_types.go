@@ -116,6 +116,18 @@ func InitGameTypes(client *mongo.Client, dbName string) error {
 		},
 	}
 
+	// Skip re-seeding if the collection is already fully populated. The unique
+	// index above is always (re)created since it is idempotent.
+	count, err := collection.CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		log.Printf("Error counting game types: %v", err)
+		return err
+	}
+	if count >= int64(len(gameTypes)) {
+		log.Println("Game types already seeded, skipping upserts")
+		return nil
+	}
+
 	// Insert game types using upsert to avoid duplicates
 	for _, gameType := range gameTypes {
 		filter := bson.M{"game_code": gameType.GameCode}

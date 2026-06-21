@@ -146,8 +146,11 @@ func GetAllUsers(c *gin.Context) {
 	defer cancel()
 
 	// Set options to sort by updatedAt in descending order (-1)
+	limit, skip := parsePagination(c)
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "updatedAt", Value: -1}})
+	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip)
 
 	cursor, err := db.UserColl.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
@@ -297,53 +300,15 @@ func GetUserScores(c *gin.Context) {
 		return
 	}
 
-	// For each score, populate owner and comments
-	var userScores []models.ScoreWithUserDetails
-	for _, score := range scores {
-		// Populate owner
-		var owner models.User
-		err := db.UserColl.FindOne(ctx, bson.M{"_id": score.Owner}).Decode(&owner)
-		if err != nil {
-			continue // Skip if owner not found
-		}
-
-		// Populate comments
-		var commentsWithDetails []models.CommentWithUserDetails
-		if len(score.Comments) > 0 {
-			commentsCursor, err := db.CommentColl.Find(ctx, bson.M{"_id": bson.M{"$in": score.Comments}})
-			if err == nil {
-				var comments []models.Comment
-				if err := commentsCursor.All(ctx, &comments); err == nil {
-					for _, comment := range comments {
-						var commentAuthor models.User
-						err := db.UserColl.FindOne(ctx, bson.M{"_id": comment.Author}).Decode(&commentAuthor)
-						if err == nil {
-							commentsWithDetails = append(commentsWithDetails, models.CommentWithUserDetails{
-								ID:        comment.ID,
-								Score:     comment.Score,
-								Author:    commentAuthor.ToResponse(),
-								Text:      comment.Text,
-								CreatedAt: comment.CreatedAt,
-								UpdatedAt: comment.UpdatedAt,
-							})
-						}
-					}
-				}
-				commentsCursor.Close(ctx)
-			}
-		}
-
-		userScores = append(userScores, models.ScoreWithUserDetails{
-			ID:        score.ID,
-			Owner:     owner.ToResponse(),
-			Game:      score.Game,
-			Value:     score.Value,
-			Text:      score.Text,
-			Metadata:  score.Metadata,
-			Comments:  commentsWithDetails,
-			CreatedAt: score.CreatedAt,
-			UpdatedAt: score.UpdatedAt,
+	// Batch-populate owners and comments to avoid N+1 lookups
+	userScores, err := populateScores(ctx, scores)
+	if err != nil {
+		log.Printf("Error populating user scores: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

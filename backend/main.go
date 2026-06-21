@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"netgames-go-server/db"
+	"netgames-go-server/middleware"
 	"netgames-go-server/routes"
 	"os"
 	"os/signal"
@@ -41,6 +42,10 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	// Global per-IP rate limit (looser than the auth-specific limit applied
+	// inside the user routes).
+	router.Use(middleware.RateLimit(120, time.Minute))
 
 	// Status endpoint
 	router.GET("/status", func(c *gin.Context) {
