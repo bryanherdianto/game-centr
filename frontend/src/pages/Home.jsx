@@ -4,9 +4,9 @@ import Footer from "../components/Footer";
 
 // Shared button classes (DESIGN.md — sharp edges, flat, Inter 15px/600).
 const primaryBtn =
-	"inline-flex items-center justify-center px-6 py-3 text-[15px] font-semibold bg-primary text-background border border-primary hover:bg-primary-hover transition-colors";
+	"inline-flex items-center justify-center px-2 py-1 text-[14px] font-semibold bg-primary text-background border border-primary hover:bg-primary-hover transition-colors";
 const secondaryBtn =
-	"inline-flex items-center justify-center px-6 py-3 text-[15px] font-semibold bg-transparent text-primary border border-border-medium hover:bg-surface transition-colors";
+	"inline-flex items-center justify-center px-2 py-1 text-[14px] font-semibold bg-transparent text-primary border border-border-medium hover:bg-surface transition-colors";
 
 // A small, curated showcase for the landing page (full list lives on /game).
 const featuredGames = [
